@@ -21,23 +21,20 @@ export default function Dashboard() {
 
   async function loadPatients(){
     try {
-      console.log("Attempting to load patients via Supabase client...");
+      console.log("Attempting to load patients via Internal API...");
       
-      const { data, error } = await supabase
-        .from("patients")
-        .select("*")
-        .order("id",{ascending:false});
+      const res = await fetch("/api/patients");
+      const data = await res.json();
 
-      if (error) {
-        console.error("Supabase error loading patients:", JSON.stringify(error, null, 2));
+      if (data.error) {
+        console.error("API error loading patients:", JSON.stringify(data.error, null, 2));
         return;
       }
 
       console.log("Successfully loaded patients:", data?.length);
-      if(data) setPatients(data);
+      setPatients(data);
     } catch (err: any) {
       console.error("Fetch exception in loadPatients:", err);
-      // Fallback or retry logic could go here
     }
   }
 
@@ -52,22 +49,22 @@ export default function Dashboard() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from("patients")
-        .insert({
+      const res = await fetch("/api/patients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name:newPatient.name,
           age:Number(newPatient.age) || 0,
           type:newPatient.type,
           date: new Date().toISOString(),
           status:"confirmed"
         })
-        .select();
+      });
+      
+      const data = await res.json();
 
-      console.log("INSERT RESULT:",data);
-      console.log("INSERT ERROR:",error);
-
-      if(error){
-        alert(`Insert failed: ${error.message}`);
+      if(data.error){
+        alert(`Insert failed: ${data.error.message}`);
         return;
       }
 
