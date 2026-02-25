@@ -29,7 +29,8 @@ export default function Dashboard() {
       console.log("LOAD RESULT:", data, error);
 
       if (error) {
-        console.error("Error loading patients:", error);
+        console.error("Error loading patients:", JSON.stringify(error, null, 2));
+        // alert(`Load failed: ${error.message || 'Unknown error'}`);
         return;
       }
 
