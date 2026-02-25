@@ -21,22 +21,23 @@ export default function Dashboard() {
 
   async function loadPatients(){
     try {
+      console.log("Attempting to load patients via Supabase client...");
+      
       const { data, error } = await supabase
         .from("patients")
         .select("*")
         .order("id",{ascending:false});
 
-      console.log("LOAD RESULT:", data, error);
-
       if (error) {
-        console.error("Error loading patients:", JSON.stringify(error, null, 2));
-        // alert(`Load failed: ${error.message || 'Unknown error'}`);
+        console.error("Supabase error loading patients:", JSON.stringify(error, null, 2));
         return;
       }
 
+      console.log("Successfully loaded patients:", data?.length);
       if(data) setPatients(data);
-    } catch (err) {
-      console.error("Fetch exception:", err);
+    } catch (err: any) {
+      console.error("Fetch exception in loadPatients:", err);
+      // Fallback or retry logic could go here
     }
   }
 
