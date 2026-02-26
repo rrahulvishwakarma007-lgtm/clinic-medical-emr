@@ -28,27 +28,41 @@ export default function PatientProfile() {
 
   async function loadPatientData() {
     setLoading(true);
-    const { data: pData } = await supabase.from("patients").select("*").eq("id", id).single();
-    const { data: presData } = await supabase.from("prescriptions").select("*").eq("patient_id", id).order("created_at", { ascending: false });
-    
-    if (pData) setPatient(pData);
-    if (presData) setPrescriptions(presData);
+    try {
+      // Use internal API for patient data to avoid CORS
+      const res = await fetch("/api/patients");
+      const allPatients = await res.json();
+      const pData = allPatients.find((p: any) => p.id === id);
+      
+      const { data: presData } = await supabase.from("prescriptions").select("*").eq("patient_id", id).order("created_at", { ascending: false });
+      
+      if (pData) setPatient(pData);
+      if (presData) setPrescriptions(presData);
+    } catch (err) {
+      console.error("Error loading patient details:", err);
+    }
     setLoading(false);
   }
 
   async function addPrescription() {
     if (!presForm.medicine) return;
-    const { error } = await supabase.from("prescriptions").insert({
-      patient_id: id,
-      medicine: presForm.medicine,
-      dosage: presForm.dosage,
-      duration: presForm.duration,
-      notes: presForm.notes
-    });
+    try {
+      const { error } = await supabase.from("prescriptions").insert({
+        patient_id: id,
+        medicine: presForm.medicine,
+        dosage: presForm.dosage,
+        duration: presForm.duration,
+        notes: presForm.notes
+      });
 
-    if (!error) {
-      setPresForm({ medicine: "", dosage: "", duration: "", notes: "" });
-      loadPatientData();
+      if (!error) {
+        setPresForm({ medicine: "", dosage: "", duration: "", notes: "" });
+        loadPatientData();
+      } else {
+        alert("Failed to save prescription: " + error.message);
+      }
+    } catch (err: any) {
+      alert("Error saving prescription: " + err.message);
     }
   }
 

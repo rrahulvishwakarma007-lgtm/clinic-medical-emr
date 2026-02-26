@@ -26,33 +26,37 @@ export default function Dashboard() {
   }, []);
 
   async function loadDashboardData() {
-    // Load Patients
-    const { data: patientsData } = await supabase
-      .from("patients")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      // Load Patients via API
+      const res = await fetch("/api/patients");
+      const patientsData = await res.json();
 
-    if (patientsData) {
-      setPatients(patientsData);
-      
-      // Load Prescriptions count
-      const { count: pCount } = await supabase
-        .from("prescriptions")
-        .select("*", { count: 'exact', head: true });
-      
-      // Load Appointments count (Today)
-      const today = new Date().toISOString().split('T')[0];
-      const { count: aCount } = await supabase
-        .from("appointments")
-        .select("*", { count: 'exact', head: true });
+      if (patientsData && !patientsData.error) {
+        setPatients(patientsData);
+        
+        // Load Prescriptions count
+        const { count: pCount } = await supabase
+          .from("prescriptions")
+          .select("*", { count: 'exact', head: true });
+        
+        // Load Appointments count (Today)
+        const today = new Date().toISOString().split('T')[0];
+        const { count: aCount } = await supabase
+          .from("appointments")
+          .select("*", { count: 'exact', head: true });
 
-      setStats({
-        totalPatients: patientsData.length,
-        todayAppointments: aCount || 0,
-        prescriptionsCount: pCount || 0
-      });
+        setStats({
+          totalPatients: patientsData.length,
+          todayAppointments: aCount || 0,
+          prescriptionsCount: pCount || 0
+        });
 
-      setRecentActivity(patientsData.slice(0, 5));
+        setRecentActivity(patientsData.slice(0, 5));
+      } else if (patientsData.error) {
+        console.error("Dashboard data load error:", patientsData.error);
+      }
+    } catch (err) {
+      console.error("Dashboard load exception:", err);
     }
   }
 
@@ -62,23 +66,32 @@ export default function Dashboard() {
       return;
     }
 
-    const { error } = await supabase
-      .from("patients")
-      .insert({
-        name: newPatient.name,
-        age: Number(newPatient.age),
-        type: newPatient.type,
-        status: "confirmed"
+    try {
+      const res = await fetch("/api/patients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newPatient.name,
+          age: Number(newPatient.age),
+          type: newPatient.type,
+          status: "confirmed"
+        })
       });
 
-    if (error) {
-      alert("Insert failed");
-      return;
-    }
+      const data = await res.json();
 
-    setShowForm(false);
-    setNewPatient({ name: "", age: "", type: "" });
-    loadDashboardData();
+      if (data.error) {
+        alert("Insert failed: " + (data.error.message || JSON.stringify(data.error)));
+        return;
+      }
+
+      setShowForm(false);
+      setNewPatient({ name: "", age: "", type: "" });
+      loadDashboardData();
+    } catch (err: any) {
+      console.error("Insert exception:", err);
+      alert("An unexpected error occurred: " + err.message);
+    }
   }
 
   const filteredPatients = patients.filter(p => 
