@@ -30,11 +30,15 @@ export default function AppointmentsPage() {
   }
 
   async function loadPatients() {
-    const { data } = await supabase
-      .from("patients")
-      .select("*");
-
-    if (data) setPatients(data);
+    try {
+      const res = await fetch("/api/patients");
+      const data = await res.json();
+      if (data && !data.error) {
+        setPatients(data);
+      }
+    } catch (err) {
+      console.error("Error loading patients for appointments:", err);
+    }
   }
 
   async function addAppointment() {

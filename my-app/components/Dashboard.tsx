@@ -60,6 +60,9 @@ export default function Dashboard() {
     }
   }
 
+  // Optimize loadDashboardData to be callable after mutation
+  const refreshData = () => loadDashboardData();
+
   async function addPatient() {
     if (!newPatient.name) {
       alert("Name required");
@@ -87,7 +90,7 @@ export default function Dashboard() {
 
       setShowForm(false);
       setNewPatient({ name: "", age: "", type: "" });
-      loadDashboardData();
+      await loadDashboardData(); // Ensure we wait for the refresh
     } catch (err: any) {
       console.error("Insert exception:", err);
       alert("An unexpected error occurred: " + err.message);
