@@ -1,41 +1,55 @@
-import { createClient } from "@supabase/supabase-js";
-import { NextResponse } from "next/server";
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
+// GET: Fetches prescriptions AND joins the patient names
 export async function GET() {
   try {
     const { data, error } = await supabase
-      .from("prescriptions")
+      .from('prescriptions')
       .select(`
-        *,
-        patients (
-          name
-        )
-      `)
-      .order("created_at", { ascending: false });
+        id,
+        medicine,
+        dosage,
+        duration,
+        notes,
+        created_at,
+        patient_id,
+        patients ( name )
+      `) // The link we made in Step 1 makes this line work
+      .order('created_at', { ascending: false });
 
-    if (error) return NextResponse.json({ error }, { status: 500 });
+    if (error) throw error;
     return NextResponse.json(data);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
+// POST: Saves the form data
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { data, error } = await supabase
-      .from("prescriptions")
-      .insert(body)
+      .from('prescriptions')
+      .insert([
+        {
+          patient_id: body.patient_id,
+          medicine: body.medicine,
+          dosage: body.dosage,
+          duration: body.duration,
+          notes: body.notes
+        }
+      ])
       .select();
 
-    if (error) return NextResponse.json({ error }, { status: 500 });
-    return NextResponse.json(data);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    if (error) throw error;
+    return NextResponse.json({ success: true, data });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -25,7 +25,11 @@ export default function AppointmentsPage() {
     try {
       const res = await fetch("/api/appointments");
       const data = await res.json();
-      if (data && !data.error) setAppointments(data);
+      if (Array.isArray(data)) {
+        setAppointments(data);
+      } else if (data.error) {
+        console.error("API error:", data.error);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -34,8 +38,12 @@ export default function AppointmentsPage() {
   async function loadPatients() {
     try {
       const res = await fetch("/api/patients");
-      const data = await res.json();
-      if (data && !data.error) setPatients(data);
+      const result = await res.json();
+      if (result.success && Array.isArray(result.data)) {
+        setPatients(result.data);
+      } else if (result.error) {
+        console.error("API error:", result.error);
+      }
     } catch (err) {
       console.error(err);
     }
