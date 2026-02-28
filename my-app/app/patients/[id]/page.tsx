@@ -24,23 +24,25 @@ export default function PatientProfile() {
     if (!id) return;
 
     async function loadData() {
-      // Load patient
-      const { data: patientData } = await supabase
-        .from("patients")
-        .select("*")
-        .eq("id", id)
-        .single();
+      try {
+        // Load patient from our secure API
+        const pRes = await fetch("/api/patients");
+        const pResult = await pRes.json();
+        if (pResult.success) {
+          const found = pResult.data.find((p: any) => String(p.id) === String(id));
+          if (found) setPatient(found);
+        }
 
-      if (patientData) setPatient(patientData);
-
-      // Load prescriptions
-      const { data: prescriptionData } = await supabase
-        .from("prescriptions")
-        .select("*")
-        .eq("patient_id", id)
-        .order("created_at", { ascending: false });
-
-      if (prescriptionData) setPrescriptions(prescriptionData);
+        // Load prescriptions from our secure API
+        const prRes = await fetch("/api/prescriptions");
+        const prData = await prRes.json();
+        if (Array.isArray(prData)) {
+          const filtered = prData.filter((pr: any) => String(pr.patient_id) === String(id));
+          setPrescriptions(filtered);
+        }
+      } catch (err) {
+        console.error("Error loading patient data:", err);
+      }
     }
 
     loadData();
@@ -50,38 +52,44 @@ export default function PatientProfile() {
   async function addPrescription() {
     if (!form.medicine) return;
 
-    const { error } = await supabase
-      .from("prescriptions")
-      .insert({
-        patient_id: id,
-        medicine: form.medicine,
-        dosage: form.dosage,
-        duration: form.duration,
-        notes: form.notes
+    try {
+      const res = await fetch("/api/prescriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patient_id: id,
+          medicine: form.medicine,
+          dosage: form.dosage,
+          duration: form.duration,
+          notes: form.notes
+        })
       });
 
-    if (error) {
-      console.log("Insert error:", error);
-      alert("Insert failed");
-      return;
+      const result = await res.json();
+
+      if (result.error) {
+        alert("Insert failed: " + result.error);
+        return;
+      }
+
+      // reload prescriptions
+      const prRes = await fetch("/api/prescriptions");
+      const prData = await prRes.json();
+      if (Array.isArray(prData)) {
+        const filtered = prData.filter((pr: any) => String(pr.patient_id) === String(id));
+        setPrescriptions(filtered);
+      }
+
+      // reset form
+      setForm({
+        medicine: "",
+        dosage: "",
+        duration: "",
+        notes: ""
+      });
+    } catch (err: any) {
+      alert("System Error: " + err.message);
     }
-
-    // reload prescriptions
-    const { data } = await supabase
-      .from("prescriptions")
-      .select("*")
-      .eq("patient_id", id)
-      .order("created_at", { ascending: false });
-
-    if (data) setPrescriptions(data);
-
-    // reset form
-    setForm({
-      medicine: "",
-      dosage: "",
-      duration: "",
-      notes: ""
-    });
   }
 
   if (!patient) {

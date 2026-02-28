@@ -20,8 +20,8 @@ export async function GET() {
         created_at,
         patient_id,
         patients ( name )
-      `) // The link we made in Step 1 makes this line work
-      .order('created_at', { ascending: false });
+      `)
+      .order('id', { ascending: false });
 
     if (error) throw error;
     return NextResponse.json(data);

@@ -17,7 +17,21 @@ export default function Dashboard() {
   const [showAddPatient, setShowAddPatient] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [newPatient, setNewPatient] = useState({
+    name: "",
+    age: "",
+    type: "General Patient",
+    date: new Date().toISOString().split("T")[0],
+    status: "Confirmed",
+    phone: "",
+    address: "",
+    blood_group: "",
+  });
+
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
     loadDashboardData();
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -119,7 +133,7 @@ export default function Dashboard() {
             Clinic Dashboard
           </h1>
           <p style={{ color: "#718096" }}>
-            Welcome back, Dr. Smith | {currentTime.toLocaleTimeString()}
+            Welcome back, Dr. Smith | {mounted ? currentTime.toLocaleTimeString() : ""}
           </p>
         </div>
         <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
