@@ -27,7 +27,7 @@ export default function AppointmentsPage() {
       const data = await res.json();
       if (Array.isArray(data)) {
         setAppointments(data);
-      } else if (data.error) {
+      } else if (data && data.error) {
         console.error("API error:", data.error);
       }
     } catch (err) {
