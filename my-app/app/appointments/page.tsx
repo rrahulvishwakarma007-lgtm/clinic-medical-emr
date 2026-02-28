@@ -25,13 +25,20 @@ export default function AppointmentsPage() {
     try {
       const res = await fetch("/api/appointments");
       const data = await res.json();
+      
       if (Array.isArray(data)) {
         setAppointments(data);
-      } else if (data && data.error) {
-        console.error("API error:", data.error);
+      } 
+      else if (data && typeof data === 'object' && 'error' in data) {
+        console.error("API error details:", data.error);
+        setAppointments([]);
+      }
+      else {
+        setAppointments([]);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Fetch error:", err);
+      setAppointments([]);
     }
   }
 
