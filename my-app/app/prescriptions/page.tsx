@@ -298,6 +298,7 @@ export default function PrescriptionsPage() {
                   <td style={{ padding: "12px 16px", fontSize: "12px", color: "#888" }}>{(p.created_at || "").split("T")[0]}</td>
                   <td style={{ padding: "12px 16px" }}>
                     <div style={{ display: "flex", gap: "6px" }}>
+                      <button className="action-btn view-btn-sm" onClick={() => setViewPrescription(p)}>👁 View</button>
                       <button className="action-btn print-btn-sm" onClick={() => handlePrint(p)}>🖨 Print</button>
                       <button className="action-btn del-btn-sm" onClick={() => deletePrescription(p.id)}>✕</button>
                     </div>
@@ -408,6 +409,67 @@ export default function PrescriptionsPage() {
                   {loading ? "Saving..." : "Save & Issue Prescription"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Prescription Modal */}
+      {viewPrescription && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: "20px" }}>
+          <div className="modal-anim" style={{ background: "white", borderRadius: "16px", width: "600px", maxHeight: "90vh", overflowY: "auto", padding: "32px", boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+              <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "24px", color: "#0f4c81" }}>Prescription Details</h2>
+              <button onClick={() => setViewPrescription(null)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#999" }}>✕</button>
+            </div>
+
+            <div style={{ background: "#f8fbff", padding: "20px", borderRadius: "12px", border: "1px solid #e8f1fb", marginBottom: "24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <div style={{ fontSize: "10px", color: "#999", textTransform: "uppercase", fontWeight: "700" }}>Patient Name</div>
+                  <div style={{ fontSize: "16px", fontWeight: "600", color: "#1a1a2e" }}>
+                    {viewPrescription.patients?.name || patients.find(pat => pat.id === viewPrescription.patient_id)?.name || "N/A"}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "10px", color: "#999", textTransform: "uppercase", fontWeight: "700" }}>Date</div>
+                  <div style={{ fontSize: "14px", color: "#555" }}>{(viewPrescription.created_at || "").split("T")[0]}</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "24px" }}>
+              <h3 style={{ fontSize: "12px", color: "#0f4c81", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px", borderBottom: "1px solid #eee", paddingBottom: "8px" }}>Prescribed Medications</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {(viewPrescription.medicine || "").split("\n").map((med: string, i: number) => (
+                  <div key={i} style={{ padding: "12px", background: "#fafbfc", borderRadius: "8px", border: "1px solid #f0f0f0" }}>
+                    <div style={{ fontWeight: "700", color: "#1a1a2e", marginBottom: "4px" }}>{i + 1}. {med}</div>
+                    <div style={{ display: "flex", gap: "16px", fontSize: "12px", color: "#666" }}>
+                      <span><strong>Dosage:</strong> {(viewPrescription.dosage || "").split("\n")[i] || "—"}</span>
+                      <span><strong>Duration:</strong> {(viewPrescription.duration || "").split("\n")[i] || "—"}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {viewPrescription.diagnosis && (
+              <div style={{ marginBottom: "20px" }}>
+                <div style={{ fontSize: "11px", color: "#999", fontWeight: "700", textTransform: "uppercase", marginBottom: "4px" }}>Diagnosis</div>
+                <div style={{ fontSize: "14px", color: "#444" }}>{viewPrescription.diagnosis}</div>
+              </div>
+            )}
+
+            {viewPrescription.notes && (
+              <div style={{ marginBottom: "24px" }}>
+                <div style={{ fontSize: "11px", color: "#999", fontWeight: "700", textTransform: "uppercase", marginBottom: "4px" }}>General Instructions</div>
+                <div style={{ fontSize: "14px", color: "#444", padding: "12px", background: "#fffbeb", borderRadius: "8px", borderLeft: "3px solid #f59e0b" }}>{viewPrescription.notes}</div>
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button onClick={() => setViewPrescription(null)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid #ddd", background: "white", cursor: "pointer", fontWeight: "600" }}>Close</button>
+              <button onClick={() => handlePrint(viewPrescription)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "none", background: "#0f4c81", color: "white", cursor: "pointer", fontWeight: "600" }}>Print Prescription</button>
             </div>
           </div>
         </div>
