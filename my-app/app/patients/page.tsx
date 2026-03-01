@@ -73,9 +73,6 @@ export default function PatientsPage() {
               onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
             />
           </div>
-          <button style={{ background: "#3182ce", color: "white", padding: "12px 24px", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "14px", boxShadow: "0 4px 6px rgba(49, 130, 206, 0.2)" }}>
-            + Add Patient
-          </button>
         </div>
       </header>
 
