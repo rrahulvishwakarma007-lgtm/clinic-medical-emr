@@ -1,0 +1,106 @@
+You are upgrading an existing Next.js 16 (App Router) clinic EMR project.
+
+IMPORTANT RULES — DO NOT BREAK:
+
+* Keep existing Supabase project and connection exactly as is.
+* DO NOT recreate supabase client or modify lib/supabase.ts.
+* DO NOT move folders or change routing structure.
+* Existing folders:
+  app/page.tsx
+  app/patients/[id]/page.tsx
+  components/Dashboard.tsx
+  components/SidebarNav.tsx
+  lib/supabase.ts
+* Existing tables already in Supabase:
+  patients
+  prescriptions
+  appointments
+  notes
+
+GOAL:
+Upgrade the UI and features so the app feels like a real clinic EMR used by doctors.
+
+REQUIREMENTS:
+
+1. DASHBOARD UPGRADE
+
+* Modern professional layout (cards + grid)
+* Quick stats cards:
+  total patients
+  today appointments
+  prescriptions count
+* Quick search bar for patients
+* Recent activity list
+* “Register Patient” modal instead of plain form
+* Keep patient navigation working (Link to /patients/[id])
+
+2. PATIENT PROFILE UPGRADE
+   Inside app/patients/[id]/page.tsx create tab system:
+
+* Overview
+* Prescriptions
+* Notes
+* Lab Results
+* Billing
+
+Overview tab:
+
+* patient info card
+* latest prescription summary
+* quick action buttons
+
+3. PRESCRIPTIONS MODULE
+
+* Form fields: medicine, dosage, duration, notes
+* Save into existing “prescriptions” table
+* Show history timeline cards
+* Clean doctor-style layout
+
+4. LAB RESULTS SECTION
+
+* Create UI only (no database change)
+* Upload field placeholder
+* List of lab entries cards
+* Minimal modern styling
+
+5. BILLING SECTION
+
+* Billing cards layout
+* Amount, status, date
+* Add Invoice button UI (no backend logic change)
+
+6. SIDEBAR
+
+* Keep SidebarNav.tsx structure
+* Ensure links work:
+  /
+  /patients
+  /appointments
+  /billing
+  /reports
+  /settings
+* Active link highlight
+
+7. DESIGN STYLE
+
+* Professional medical UI
+* Clean spacing
+* Card based layout
+* Soft shadows
+* Rounded corners
+* Minimal colors (white, gray, subtle blue)
+
+8. DO NOT:
+
+* Change Supabase keys
+* Add new auth systems
+* Convert server components incorrectly
+* Break existing navigation
+
+OUTPUT:
+Return FULL updated code only for:
+
+* components/Dashboard.tsx
+* app/patients/[id]/page.tsx
+* components/SidebarNav.tsx
+  Keep everything compatible with current project.
