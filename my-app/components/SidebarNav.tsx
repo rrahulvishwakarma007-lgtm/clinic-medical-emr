@@ -13,7 +13,6 @@ export default function SidebarNav() {
     { name: "Prescriptions", path: "/prescriptions", icon: "💊" },
     { name: "Billing", path: "/billing", icon: "🧾" },
     { name: "Reports", path: "/reports", icon: "📊" },
-    { name: "Settings", path: "/settings", icon: "⚙️" },
   ];
 
   const isActive = (path: string) => {

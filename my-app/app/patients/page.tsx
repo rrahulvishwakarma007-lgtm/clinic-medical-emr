@@ -54,73 +54,99 @@ export default function PatientsPage() {
   }
 
   return (
-    <div className="patients-container" style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
+    <div className="patients-container" style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto", minHeight: "100vh" }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-        <h1>Patients Directory</h1>
-        <input 
-          type="text" 
-          placeholder="Search patients..." 
-          style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px", width: "300px" }}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <div>
+          <h1 style={{ fontSize: "28px", fontWeight: "bold", color: "#1a202c" }}>Patients Directory</h1>
+          <p style={{ color: "#718096", fontSize: "14px" }}>Manage and view all patient medical records</p>
+        </div>
+        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+          <div style={{ position: "relative" }}>
+            <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#a0aec0" }}>🔍</span>
+            <input 
+              type="text" 
+              placeholder="Search by name..." 
+              style={{ padding: "12px 12px 12px 40px", border: "1.5px solid #e2e8f0", borderRadius: "10px", width: "320px", fontSize: "14px", outline: "none", transition: "all 0.2s" }}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={(e) => e.target.style.borderColor = "#3182ce"}
+              onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
+            />
+          </div>
+          <button style={{ background: "#3182ce", color: "white", padding: "12px 24px", borderRadius: "10px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "14px", boxShadow: "0 4px 6px rgba(49, 130, 206, 0.2)" }}>
+            + Add Patient
+          </button>
+        </div>
       </header>
 
-      <div className="section-card" style={{ background: "white", borderRadius: "12px", padding: "1.5rem", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", border: "1px solid #edf2f7" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <div className="section-card" style={{ background: "white", borderRadius: "16px", padding: "1rem", boxShadow: "0 4px 20px rgba(0,0,0,0.05)", border: "1px solid #edf2f7" }}>
+        <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 8px" }}>
           <thead>
-            <tr style={{ borderBottom: "2px solid #edf2f7", textAlign: "left" }}>
-              <th style={{ padding: "1rem", color: "#718096", fontSize: "0.875rem", fontWeight: "600" }}>NAME</th>
-              <th style={{ padding: "1rem", color: "#718096", fontSize: "0.875rem", fontWeight: "600" }}>AGE</th>
-              <th style={{ padding: "1rem", color: "#718096", fontSize: "0.875rem", fontWeight: "600" }}>TYPE</th>
-              <th style={{ padding: "1rem", color: "#718096", fontSize: "0.875rem", fontWeight: "600" }}>ACTION</th>
+            <tr style={{ textAlign: "left" }}>
+              <th style={{ padding: "1rem", color: "#a0aec0", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Patient Details</th>
+              <th style={{ padding: "1rem", color: "#a0aec0", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Age</th>
+              <th style={{ padding: "1rem", color: "#a0aec0", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Classification</th>
+              <th style={{ padding: "1rem", color: "#a0aec0", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</th>
+              <th style={{ padding: "1rem", color: "#a0aec0", fontSize: "0.75rem", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "right" }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4} style={{ padding: "2rem", textAlign: "center", color: "#a0aec0" }}>
-                  Loading patients...
+                <td colSpan={5} style={{ padding: "4rem", textAlign: "center" }}>
+                  <div style={{ color: "#3182ce", fontWeight: "600" }}>Fetching records...</div>
                 </td>
               </tr>
             ) : filteredPatients.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ padding: "2rem", textAlign: "center", color: "#a0aec0" }}>
-                  No patients found.
+                <td colSpan={5} style={{ padding: "4rem", textAlign: "center", color: "#a0aec0" }}>
+                  <div style={{ fontSize: "40px", marginBottom: "1rem" }}>👥</div>
+                  No patient records found.
                 </td>
               </tr>
             ) : (
               filteredPatients.map((p) => (
-                <tr key={p.id} style={{ borderBottom: "1px solid #edf2f7" }}>
-                  <td style={{ padding: "1rem" }}>
-                    <div style={{ fontWeight: "600", color: "#2d3748" }}>{p.name}</div>
+                <tr key={p.id} style={{ background: "white", transition: "transform 0.2s" }} className="patient-row">
+                  <td style={{ padding: "1.25rem 1rem", borderTop: "1px solid #f7fafc", borderBottom: "1px solid #f7fafc", borderLeft: "1px solid #f7fafc", borderRadius: "12px 0 0 12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div style={{ width: "40px", height: "40px", background: "#ebf8ff", color: "#3182ce", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "14px" }}>
+                        {p.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: "700", color: "#2d3748", fontSize: "15px" }}>{p.name}</div>
+                        <div style={{ fontSize: "12px", color: "#a0aec0" }}>ID: #{p.id.slice(0, 8)}</div>
+                      </div>
+                    </div>
                   </td>
-                  <td style={{ padding: "1rem", color: "#4a5568" }}>{p.age} years</td>
-                  <td style={{ padding: "1rem" }}>
-                    <span
-                      style={{
-                        padding: "0.25rem 0.75rem",
-                        borderRadius: "9999px",
-                        fontSize: "0.75rem",
-                        background: "#ebf8ff",
-                        color: "#3182ce",
-                        fontWeight: "600",
-                      }}
-                    >
+                  <td style={{ padding: "1.25rem 1rem", borderTop: "1px solid #f7fafc", borderBottom: "1px solid #f7fafc", color: "#4a5568", fontWeight: "500" }}>
+                    {p.age} years
+                  </td>
+                  <td style={{ padding: "1.25rem 1rem", borderTop: "1px solid #f7fafc", borderBottom: "1px solid #f7fafc" }}>
+                    <span style={{ padding: "0.4rem 1rem", borderRadius: "8px", fontSize: "0.75rem", background: p.type === 'Emergency' ? '#fff5f5' : '#ebf8ff', color: p.type === 'Emergency' ? '#c53030' : '#3182ce', fontWeight: "700" }}>
                       {p.type}
                     </span>
                   </td>
-                  <td style={{ padding: "1rem" }}>
+                  <td style={{ padding: "1.25rem 1rem", borderTop: "1px solid #f7fafc", borderBottom: "1px solid #f7fafc" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#48bb78" }}></span>
+                      <span style={{ fontSize: "13px", color: "#4a5568", fontWeight: "500" }}>Active</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: "1.25rem 1rem", borderTop: "1px solid #f7fafc", borderBottom: "1px solid #f7fafc", borderRight: "1px solid #f7fafc", borderRadius: "0 12px 12px 0", textAlign: "right" }}>
                     <Link
                       href={`/patients/${p.id}`}
                       style={{
+                        background: "#f7fafc",
                         color: "#3182ce",
+                        padding: "8px 16px",
+                        borderRadius: "8px",
                         textDecoration: "none",
-                        fontWeight: "600",
+                        fontWeight: "700",
                         fontSize: "0.875rem",
+                        transition: "all 0.2s"
                       }}
                     >
-                      View Profile →
+                      View Details
                     </Link>
                   </td>
                 </tr>
@@ -129,6 +155,12 @@ export default function PatientsPage() {
           </tbody>
         </table>
       </div>
+      <style jsx>{`
+        .patient-row:hover {
+          background-color: #f8fbff !important;
+          transform: translateY(-1px);
+        }
+      `}</style>
     </div>
   );
 }
