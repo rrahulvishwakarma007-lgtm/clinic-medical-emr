@@ -1,4 +1,5 @@
 "use client";
+import hospitalConfig from "@/config/hospital";
 import { useEffect, useState } from "react";
 
 export default function BillingPage() {
