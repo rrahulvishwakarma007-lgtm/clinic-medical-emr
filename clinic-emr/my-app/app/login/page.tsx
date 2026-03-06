@@ -108,17 +108,7 @@ export default function LoginPage() {
             {loading ? <><span className="spinner" />Signing in...</> : "Sign In"}
           </button>
         </form>
-
-        {/* Hint box */}
-        <div style={{ marginTop: "24px", background: "#f8fbff", borderRadius: "10px", padding: "14px 16px", border: "1px solid #e8f1fb" }}>
-          <div style={{ fontSize: "11px", color: "#999", fontWeight: "600", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>Default Logins</div>
-          <div style={{ fontSize: "12px", color: "#666", lineHeight: 2 }}>
-            <div>👨‍⚕️ <strong>Doctor:</strong> doctor@clinic.com / doctor123</div>
-            <div>👩‍💼 <strong>Staff:</strong> staff@clinic.com / staff123</div>
-          </div>
-          <div style={{ fontSize: "11px", color: "#bbb", marginTop: "8px" }}>Change these in <code style={{ background: "#eef", padding: "1px 5px", borderRadius: "4px" }}>app/login/page.tsx</code></div>
-        </div>
-
+    
       </div>
     </div>
   );
