@@ -34,6 +34,7 @@ export default function AppointmentsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("today");
   const [searchQuery, setSearchQuery] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [viewAppointment, setViewAppointment] = useState<any | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -267,7 +268,15 @@ export default function AppointmentsPage() {
                     </select>
                   </td>
                   <td style={{ padding: "13px 16px" }}>
-                    <button className="del-btn" onClick={() => deleteAppointment(a.id)} title="Delete">✕</button>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <button 
+                        onClick={() => setViewAppointment(a)}
+                        style={{ background: "#ebf8ff", color: "#3182ce", border: "none", padding: "6px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: "700", cursor: "pointer" }}
+                      >
+                        👁 View
+                      </button>
+                      <button className="del-btn" onClick={() => deleteAppointment(a.id)} title="Delete">✕</button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -354,6 +363,72 @@ export default function AppointmentsPage() {
                 <button onClick={addAppointment} disabled={loading}
                   style={{ flex: 1, padding: "12px", borderRadius: "8px", background: loading ? "#93c5fd" : "#0f4c81", color: "white", border: "none", cursor: loading ? "not-allowed" : "pointer", fontSize: "14px", fontWeight: "600" }}>
                   {loading ? "Scheduling..." : "Schedule Appointment"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* View Appointment Modal */}
+      {viewAppointment && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: "20px" }}>
+          <div className="modal-anim" style={{ background: "white", borderRadius: "16px", width: "500px", padding: "32px", boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+              <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "24px", color: "#0f4c81", margin: 0 }}>Appointment Details</h2>
+              <button onClick={() => setViewAppointment(null)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#999" }}>✕</button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div style={{ background: "#f8fbff", padding: "20px", borderRadius: "12px", border: "1px solid #e8f1fb" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <div style={{ fontSize: "10px", color: "#999", textTransform: "uppercase", fontWeight: "700", letterSpacing: "1px", marginBottom: "4px" }}>Patient</div>
+                    <div style={{ fontSize: "16px", fontWeight: "700", color: "#1a1a2e" }}>{viewAppointment.patient_name}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "10px", color: "#999", textTransform: "uppercase", fontWeight: "700", letterSpacing: "1px", marginBottom: "4px" }}>Status</div>
+                    <div style={{ display: "inline-block", padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: "800", background: STATUS_STYLES[viewAppointment.status as Status]?.bg, color: STATUS_STYLES[viewAppointment.status as Status]?.color }}>
+                      {viewAppointment.status}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <div style={{ fontSize: "10px", color: "#999", textTransform: "uppercase", fontWeight: "700", letterSpacing: "1px", marginBottom: "4px" }}>Date</div>
+                  <div style={{ fontSize: "14px", color: "#444", fontWeight: "600" }}>{formatDate(viewAppointment.date)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "10px", color: "#999", textTransform: "uppercase", fontWeight: "700", letterSpacing: "1px", marginBottom: "4px" }}>Time</div>
+                  <div style={{ fontSize: "14px", color: "#444", fontWeight: "600" }}>{formatTime(viewAppointment.time)}</div>
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: "10px", color: "#999", textTransform: "uppercase", fontWeight: "700", letterSpacing: "1px", marginBottom: "4px" }}>Visit Type</div>
+                <div style={{ fontSize: "14px", color: "#444", fontWeight: "600" }}>{viewAppointment.visit_type || "General Checkup"}</div>
+              </div>
+
+              {viewAppointment.notes && (
+                <div>
+                  <div style={{ fontSize: "10px", color: "#999", textTransform: "uppercase", fontWeight: "700", letterSpacing: "1px", marginBottom: "4px" }}>Notes</div>
+                  <div style={{ fontSize: "14px", color: "#555", padding: "12px", background: "#f9fafb", borderRadius: "8px", border: "1px solid #f0f0f0", lineHeight: "1.6" }}>
+                    {viewAppointment.notes}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginTop: "12px", display: "flex", gap: "10px" }}>
+                <button onClick={() => setViewAppointment(null)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1.5px solid #e2e8f0", background: "white", cursor: "pointer", fontWeight: "700", fontSize: "14px", color: "#4a5568" }}>Close</button>
+                <button 
+                  onClick={() => {
+                    setViewAppointment(null);
+                    router.push(`/patients/${viewAppointment.patient_id}`);
+                  }}
+                  style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "none", background: "#0f4c81", color: "white", cursor: "pointer", fontWeight: "700", fontSize: "14px" }}
+                >
+                  View Patient Profile
                 </button>
               </div>
             </div>
