@@ -20,9 +20,14 @@ export default function SidebarNav() {
     return pathname.startsWith(path);
   };
 
+  function handleLogout() {
+    localStorage.removeItem("clinic_user");
+    window.location.href = "/login";
+  }
+
   return (
     <nav className="sidebar-nav">
-      {/* Doctor info at top of sidebar */}
+      {/* Doctor info */}
       <div className="doctor-info">
         <div className="doctor-avatar">
           {hospitalConfig.doctorName.charAt(0)}
@@ -33,6 +38,7 @@ export default function SidebarNav() {
         </div>
       </div>
 
+      {/* Nav links */}
       <div className="nav-group">
         {navItems.map((item) => (
           <Link
@@ -46,18 +52,87 @@ export default function SidebarNav() {
         ))}
       </div>
 
+      {/* Logout pinned to bottom */}
+      <div className="logout-wrap">
+        <button className="logout-btn" onClick={handleLogout}>
+          <span>🚪</span>
+          <span>Sign Out</span>
+        </button>
+      </div>
+
       <style jsx>{`
-        .sidebar-nav { padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
-        .doctor-info { display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem 1rem; background: rgba(255,255,255,0.08); border-radius: 10px; margin-bottom: 0.5rem; }
-        .doctor-avatar { width: 34px; height: 34px; border-radius: 50%; background: #3182ce; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+        .sidebar-nav {
+          padding: 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          height: 100%;
+        }
+        .doctor-info {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          padding: 0.75rem 1rem;
+          background: rgba(255,255,255,0.08);
+          border-radius: 10px;
+          margin-bottom: 0.5rem;
+        }
+        .doctor-avatar {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: #3182ce;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 14px;
+          flex-shrink: 0;
+        }
         .doctor-name { font-size: 12px; font-weight: 600; color: #e2e8f0; line-height: 1.3; }
         .doctor-degree { font-size: 10px; color: #a0aec0; }
         .nav-group { display: flex; flex-direction: column; gap: 0.5rem; }
-        .nav-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; text-decoration: none; color: #4a5568; border-radius: 10px; font-weight: 500; transition: all 0.2s; }
+        .nav-link {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.75rem 1rem;
+          text-decoration: none;
+          color: #4a5568;
+          border-radius: 10px;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
         .nav-link:hover { background: #f7fafc; color: #3182ce; }
         .nav-link.active { background: #ebf8ff; color: #3182ce; font-weight: 600; }
         .nav-icon { font-size: 1.1rem; }
         .nav-text { font-size: 0.95rem; }
+        .logout-wrap {
+          margin-top: auto;
+          padding-top: 1rem;
+          border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .logout-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          width: 100%;
+          padding: 0.75rem 1rem;
+          background: rgba(254,226,226,0.15);
+          color: #fc8181;
+          border: 1px solid rgba(252,129,129,0.2);
+          border-radius: 10px;
+          font-size: 0.95rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          font-family: inherit;
+        }
+        .logout-btn:hover {
+          background: rgba(254,226,226,0.3);
+          color: #feb2b2;
+        }
       `}</style>
     </nav>
   );
