@@ -36,3 +36,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
+export async function PATCH(req: Request) {
+  try {
+    const body = await req.json();
+    const { id, ...updateData } = body;
+    
+    if (!id) {
+      return NextResponse.json({ success: false, error: "Missing patient ID" }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from("patients")
+      .update(updateData)
+      .eq("id", id)
+      .select();
+
+    if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, data }, { status: 200 });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
