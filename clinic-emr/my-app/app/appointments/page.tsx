@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import hospitalConfig from "@/config/hospital";
 
 type ViewMode = "today" | "upcoming" | "all";
@@ -26,6 +27,8 @@ const TIME_SLOTS = [
 ];
 
 export default function AppointmentsPage() {
+  const router = useRouter();
+
   const [appointments, setAppointments] = useState<any[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -119,10 +122,8 @@ export default function AppointmentsPage() {
     loadAppointments();
   }
 
-  // filtering
   const filtered = appointments.filter(a => {
-    const matchSearch = !searchQuery ||
-      a.patient_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchSearch = !searchQuery || a.patient_name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchView =
       viewMode === "all" ? true :
       viewMode === "today" ? a.date === today :
@@ -133,13 +134,11 @@ export default function AppointmentsPage() {
     return (a.time || "").localeCompare(b.time || "");
   });
 
-  // stats
   const todayAppts = appointments.filter(a => a.date === today);
   const waitingCount = todayAppts.filter(a => a.status === "Waiting").length;
   const completedToday = todayAppts.filter(a => a.status === "Completed").length;
   const upcomingCount = appointments.filter(a => a.date > today).length;
 
-  // check slot taken
   function isSlotTaken(time: string) {
     return appointments.some(a => a.date === form.date && a.time === time && a.status !== "Cancelled");
   }
@@ -269,7 +268,7 @@ export default function AppointmentsPage() {
                   </td>
                   <td style={{ padding: "13px 16px" }}>
                     <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                      <button 
+                      <button
                         onClick={() => setViewAppointment(a)}
                         style={{ background: "#ebf8ff", color: "#3182ce", border: "none", padding: "6px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: "700", cursor: "pointer" }}
                       >
@@ -295,8 +294,6 @@ export default function AppointmentsPage() {
             </div>
 
             <div style={{ padding: "0 32px 28px", display: "flex", flexDirection: "column", gap: "16px" }}>
-
-              {/* Patient */}
               <div>
                 <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>Patient *</label>
                 <select style={inputStyle} value={form.patient_id}
@@ -309,7 +306,6 @@ export default function AppointmentsPage() {
                 </select>
               </div>
 
-              {/* Date + Visit type */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>Date *</label>
@@ -324,7 +320,6 @@ export default function AppointmentsPage() {
                 </div>
               </div>
 
-              {/* Time slots */}
               <div>
                 <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "8px" }}>
                   Time Slot * {form.time && <span style={{ color: "#0f4c81", textTransform: "none", letterSpacing: 0 }}>— {formatTime(form.time)} selected</span>}
@@ -342,7 +337,6 @@ export default function AppointmentsPage() {
                 </div>
               </div>
 
-              {/* Status */}
               <div>
                 <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>Status</label>
                 <select style={inputStyle} value={form.status} onChange={e => setForm({ ...form, status: e.target.value as Status })}>
@@ -350,14 +344,12 @@ export default function AppointmentsPage() {
                 </select>
               </div>
 
-              {/* Notes */}
               <div>
                 <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>Notes (optional)</label>
                 <textarea placeholder="Reason for visit, symptoms, special instructions..." style={{ ...inputStyle, minHeight: "80px", resize: "none" }}
                   value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
               </div>
 
-              {/* Buttons */}
               <div style={{ display: "flex", gap: "12px", paddingTop: "4px" }}>
                 <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid #ddd", background: "white", cursor: "pointer", fontSize: "14px", color: "#555" }}>Cancel</button>
                 <button onClick={addAppointment} disabled={loading}
@@ -369,6 +361,7 @@ export default function AppointmentsPage() {
           </div>
         </div>
       )}
+
       {/* View Appointment Modal */}
       {viewAppointment && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: "20px" }}>
@@ -421,10 +414,11 @@ export default function AppointmentsPage() {
 
               <div style={{ marginTop: "12px", display: "flex", gap: "10px" }}>
                 <button onClick={() => setViewAppointment(null)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1.5px solid #e2e8f0", background: "white", cursor: "pointer", fontWeight: "700", fontSize: "14px", color: "#4a5568" }}>Close</button>
-                <button 
+                <button
                   onClick={() => {
+                    const patientId = viewAppointment.patient_id;
                     setViewAppointment(null);
-                    router.push(`/patients/${viewAppointment.patient_id}`);
+                    router.push(`/patients/${patientId}`);
                   }}
                   style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "none", background: "#0f4c81", color: "white", cursor: "pointer", fontWeight: "700", fontSize: "14px" }}
                 >
