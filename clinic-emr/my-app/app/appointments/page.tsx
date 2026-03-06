@@ -39,6 +39,17 @@ export default function AppointmentsPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [viewAppointment, setViewAppointment] = useState<any | null>(null);
 
+  // ── Edit state ──
+  const [editAppointment, setEditAppointment] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({
+    date: "",
+    time: "",
+    visit_type: "General Checkup",
+    notes: "",
+    status: "Confirmed" as Status,
+  });
+  const [editLoading, setEditLoading] = useState(false);
+
   const today = new Date().toISOString().split("T")[0];
 
   const [form, setForm] = useState({
@@ -99,6 +110,45 @@ export default function AppointmentsPage() {
     finally { setLoading(false); }
   }
 
+  // ── Open edit modal pre-filled ──
+  function openEdit(a: any) {
+    setEditAppointment(a);
+    setEditForm({
+      date: a.date,
+      time: a.time,
+      visit_type: a.visit_type || "General Checkup",
+      notes: a.notes || "",
+      status: a.status || "Confirmed",
+    });
+  }
+
+  // ── Save edited appointment ──
+  async function saveEdit() {
+    if (!editForm.date || !editForm.time) return alert("Please select date and time.");
+    setEditLoading(true);
+    try {
+      const res = await fetch("/api/appointments", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editAppointment.id,
+          date: editForm.date,
+          time: editForm.time,
+          visit_type: editForm.visit_type,
+          notes: editForm.notes,
+          status: editForm.status,
+        }),
+      });
+      const data = await res.json();
+      if (data?.error) { alert("Error: " + data.error); return; }
+      setAppointments(prev => prev.map(a =>
+        a.id === editAppointment.id ? { ...a, ...editForm } : a
+      ));
+      setEditAppointment(null);
+    } catch (err: any) { alert("Failed: " + err.message); }
+    finally { setEditLoading(false); }
+  }
+
   async function updateStatus(id: string, status: Status) {
     setUpdatingId(id);
     try {
@@ -139,10 +189,6 @@ export default function AppointmentsPage() {
   const completedToday = todayAppts.filter(a => a.status === "Completed").length;
   const upcomingCount = appointments.filter(a => a.date > today).length;
 
-  function isSlotTaken(time: string) {
-    return appointments.some(a => a.date === form.date && a.time === time && a.status !== "Cancelled");
-  }
-
   function formatTime(t: string) {
     if (!t) return "—";
     const [h, m] = t.split(":");
@@ -161,7 +207,7 @@ export default function AppointmentsPage() {
     <div style={{ padding: "2rem", minHeight: "100vh", background: "#f0f4f8", fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-        .view-btn{border:none;cursor:pointer;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;transition:all 0.15s}
+        .view-btn{border:none;cursor:pointer;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;transition:all 0.15s;font-family:inherit}
         .view-btn.active{background:#0f4c81;color:white}
         .view-btn:not(.active){background:white;color:#555}
         .view-btn:not(.active):hover{background:#e8f1fb;color:#0f4c81}
@@ -170,7 +216,9 @@ export default function AppointmentsPage() {
         .status-select{border:none;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
         .del-btn{background:none;border:none;cursor:pointer;color:#cbd5e0;padding:6px;border-radius:6px;transition:all 0.15s;font-size:16px}
         .del-btn:hover{color:#e53e3e;background:#fee2e2}
-        .slot-btn{padding:8px 10px;border-radius:7px;border:1.5px solid #e2e8f0;background:white;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.15s;text-align:center}
+        .edit-btn{background:#f0fdf4;color:#166534;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.15s;font-family:inherit}
+        .edit-btn:hover{background:#dcfce7}
+        .slot-btn{padding:8px 10px;border-radius:7px;border:1.5px solid #e2e8f0;background:white;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.15s;text-align:center;font-family:inherit}
         .slot-btn:hover:not(:disabled){border-color:#0f4c81;color:#0f4c81;background:#ebf8ff}
         .slot-btn.selected{background:#0f4c81;color:white;border-color:#0f4c81}
         .slot-btn:disabled{background:#f8f8f8;color:#ccc;cursor:not-allowed;text-decoration:line-through}
@@ -186,10 +234,8 @@ export default function AppointmentsPage() {
           <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "26px", color: "#0f4c81", margin: 0 }}>Appointments</h1>
           <p style={{ color: "#888", fontSize: "14px", marginTop: "4px" }}>{hospitalConfig.name} &bull; {formatDate(today)}</p>
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          style={{ background: "#0f4c81", color: "white", border: "none", padding: "11px 22px", borderRadius: "10px", cursor: "pointer", fontWeight: "600", fontSize: "14px", boxShadow: "0 4px 14px rgba(15,76,129,0.25)" }}
-        >
+        <button onClick={() => setShowAdd(true)}
+          style={{ background: "#0f4c81", color: "white", border: "none", padding: "11px 22px", borderRadius: "10px", cursor: "pointer", fontWeight: "600", fontSize: "14px", boxShadow: "0 4px 14px rgba(15,76,129,0.25)" }}>
           + New Appointment
         </button>
       </div>
@@ -219,13 +265,9 @@ export default function AppointmentsPage() {
             </button>
           ))}
         </div>
-        <input
-          type="text"
-          placeholder="Search patient..."
-          value={searchQuery}
+        <input type="text" placeholder="Search patient..." value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          style={{ padding: "9px 14px", borderRadius: "8px", border: "1.5px solid #e2e8f0", fontSize: "14px", width: "220px", background: "white" }}
-        />
+          style={{ padding: "9px 14px", borderRadius: "8px", border: "1.5px solid #e2e8f0", fontSize: "14px", width: "220px", background: "white" }} />
       </div>
 
       {/* Table */}
@@ -233,7 +275,7 @@ export default function AppointmentsPage() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#0f4c81" }}>
-              {["Time", "Patient", "Visit Type", "Date", "Notes", "Status", ""].map(h => (
+              {["Time", "Patient", "Visit Type", "Date", "Notes", "Status", "Actions"].map(h => (
                 <th key={h} style={{ padding: "13px 16px", color: "white", fontSize: "11px", textTransform: "uppercase", letterSpacing: "1.5px", textAlign: "left", fontWeight: "600" }}>{h}</th>
               ))}
             </tr>
@@ -256,24 +298,19 @@ export default function AppointmentsPage() {
                   <td style={{ padding: "13px 16px", fontSize: "13px", color: "#666" }}>{formatDate(a.date)}</td>
                   <td style={{ padding: "13px 16px", fontSize: "12px", color: "#999", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.notes || "—"}</td>
                   <td style={{ padding: "13px 16px" }}>
-                    <select
-                      className="status-select"
-                      value={a.status || "Confirmed"}
-                      disabled={updatingId === a.id}
+                    <select className="status-select" value={a.status || "Confirmed"} disabled={updatingId === a.id}
                       style={{ background: st.bg, color: st.color }}
-                      onChange={e => updateStatus(a.id, e.target.value as Status)}
-                    >
+                      onChange={e => updateStatus(a.id, e.target.value as Status)}>
                       {Object.keys(STATUS_STYLES).map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </td>
                   <td style={{ padding: "13px 16px" }}>
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                      <button
-                        onClick={() => setViewAppointment(a)}
-                        style={{ background: "#ebf8ff", color: "#3182ce", border: "none", padding: "6px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: "700", cursor: "pointer" }}
-                      >
+                    <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
+                      <button onClick={() => setViewAppointment(a)}
+                        style={{ background: "#ebf8ff", color: "#3182ce", border: "none", padding: "5px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: "700", cursor: "pointer", fontFamily: "inherit" }}>
                         👁 View
                       </button>
+                      <button className="edit-btn" onClick={() => openEdit(a)}>✏️ Edit</button>
                       <button className="del-btn" onClick={() => deleteAppointment(a.id)} title="Delete">✕</button>
                     </div>
                   </td>
@@ -284,7 +321,7 @@ export default function AppointmentsPage() {
         </table>
       </div>
 
-      {/* Add Appointment Modal */}
+      {/* ── Add Appointment Modal ── */}
       {showAdd && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
           <div className="modal-anim" style={{ background: "white", borderRadius: "16px", width: "520px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}>
@@ -292,7 +329,6 @@ export default function AppointmentsPage() {
               <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "22px", color: "#0f4c81", marginBottom: "4px" }}>New Appointment</h2>
               <p style={{ color: "#999", fontSize: "13px", marginBottom: "24px" }}>Schedule a patient visit</p>
             </div>
-
             <div style={{ padding: "0 32px 28px", display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
                 <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>Patient *</label>
@@ -305,7 +341,6 @@ export default function AppointmentsPage() {
                   {patients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
-
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>Date *</label>
@@ -319,14 +354,13 @@ export default function AppointmentsPage() {
                   </select>
                 </div>
               </div>
-
               <div>
                 <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "8px" }}>
                   Time Slot * {form.time && <span style={{ color: "#0f4c81", textTransform: "none", letterSpacing: 0 }}>— {formatTime(form.time)} selected</span>}
                 </label>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "8px" }}>
                   {TIME_SLOTS.map(t => {
-                    const taken = isSlotTaken(t);
+                    const taken = appointments.some(a => a.date === form.date && a.time === t && a.status !== "Cancelled");
                     return (
                       <button key={t} disabled={taken} className={`slot-btn${form.time === t ? " selected" : ""}`}
                         onClick={() => setForm({ ...form, time: t })}>
@@ -336,20 +370,17 @@ export default function AppointmentsPage() {
                   })}
                 </div>
               </div>
-
               <div>
                 <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>Status</label>
                 <select style={inputStyle} value={form.status} onChange={e => setForm({ ...form, status: e.target.value as Status })}>
                   {Object.keys(STATUS_STYLES).map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
-
               <div>
                 <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>Notes (optional)</label>
                 <textarea placeholder="Reason for visit, symptoms, special instructions..." style={{ ...inputStyle, minHeight: "80px", resize: "none" }}
                   value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
               </div>
-
               <div style={{ display: "flex", gap: "12px", paddingTop: "4px" }}>
                 <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid #ddd", background: "white", cursor: "pointer", fontSize: "14px", color: "#555" }}>Cancel</button>
                 <button onClick={addAppointment} disabled={loading}
@@ -362,7 +393,78 @@ export default function AppointmentsPage() {
         </div>
       )}
 
-      {/* View Appointment Modal */}
+      {/* ── Edit Appointment Modal ── */}
+      {editAppointment && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1200, padding: "20px" }}>
+          <div className="modal-anim" style={{ background: "white", borderRadius: "16px", width: "520px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ padding: "28px 32px 0" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "22px", color: "#0f4c81", margin: 0 }}>Edit Appointment</h2>
+                <button onClick={() => setEditAppointment(null)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#999" }}>✕</button>
+              </div>
+              <p style={{ color: "#999", fontSize: "13px", marginBottom: "24px" }}>
+                Rescheduling for <strong style={{ color: "#1a1a2e" }}>{editAppointment.patient_name}</strong>
+              </p>
+            </div>
+            <div style={{ padding: "0 32px 28px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>Date *</label>
+                  <input type="date" style={inputStyle} value={editForm.date}
+                    onChange={e => setEditForm({ ...editForm, date: e.target.value, time: "" })} />
+                </div>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>Visit Type</label>
+                  <select style={inputStyle} value={editForm.visit_type} onChange={e => setEditForm({ ...editForm, visit_type: e.target.value })}>
+                    {VISIT_TYPES.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "8px" }}>
+                  Time Slot * {editForm.time && <span style={{ color: "#0f4c81", textTransform: "none", letterSpacing: 0 }}>— {formatTime(editForm.time)} selected</span>}
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "8px" }}>
+                  {TIME_SLOTS.map(t => {
+                    const taken = appointments.some(a =>
+                      a.date === editForm.date &&
+                      a.time === t &&
+                      a.status !== "Cancelled" &&
+                      a.id !== editAppointment.id  // don't block its own current slot
+                    );
+                    return (
+                      <button key={t} disabled={taken} className={`slot-btn${editForm.time === t ? " selected" : ""}`}
+                        onClick={() => setEditForm({ ...editForm, time: t })}>
+                        {formatTime(t)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>Status</label>
+                <select style={inputStyle} value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value as Status })}>
+                  {Object.keys(STATUS_STYLES).map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: "600", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>Notes</label>
+                <textarea placeholder="Reason for visit, symptoms..." style={{ ...inputStyle, minHeight: "80px", resize: "none" }}
+                  value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} />
+              </div>
+              <div style={{ display: "flex", gap: "12px", paddingTop: "4px" }}>
+                <button onClick={() => setEditAppointment(null)} style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid #ddd", background: "white", cursor: "pointer", fontSize: "14px", color: "#555" }}>Cancel</button>
+                <button onClick={saveEdit} disabled={editLoading}
+                  style={{ flex: 1, padding: "12px", borderRadius: "8px", background: editLoading ? "#93c5fd" : "#0f4c81", color: "white", border: "none", cursor: editLoading ? "not-allowed" : "pointer", fontSize: "14px", fontWeight: "600" }}>
+                  {editLoading ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── View Appointment Modal ── */}
       {viewAppointment && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: "20px" }}>
           <div className="modal-anim" style={{ background: "white", borderRadius: "16px", width: "500px", padding: "32px", boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
@@ -370,7 +472,6 @@ export default function AppointmentsPage() {
               <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "24px", color: "#0f4c81", margin: 0 }}>Appointment Details</h2>
               <button onClick={() => setViewAppointment(null)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#999" }}>✕</button>
             </div>
-
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <div style={{ background: "#f8fbff", padding: "20px", borderRadius: "12px", border: "1px solid #e8f1fb" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -386,7 +487,6 @@ export default function AppointmentsPage() {
                   </div>
                 </div>
               </div>
-
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
                   <div style={{ fontSize: "10px", color: "#999", textTransform: "uppercase", fontWeight: "700", letterSpacing: "1px", marginBottom: "4px" }}>Date</div>
@@ -397,12 +497,10 @@ export default function AppointmentsPage() {
                   <div style={{ fontSize: "14px", color: "#444", fontWeight: "600" }}>{formatTime(viewAppointment.time)}</div>
                 </div>
               </div>
-
               <div>
                 <div style={{ fontSize: "10px", color: "#999", textTransform: "uppercase", fontWeight: "700", letterSpacing: "1px", marginBottom: "4px" }}>Visit Type</div>
                 <div style={{ fontSize: "14px", color: "#444", fontWeight: "600" }}>{viewAppointment.visit_type || "General Checkup"}</div>
               </div>
-
               {viewAppointment.notes && (
                 <div>
                   <div style={{ fontSize: "10px", color: "#999", textTransform: "uppercase", fontWeight: "700", letterSpacing: "1px", marginBottom: "4px" }}>Notes</div>
@@ -411,18 +509,20 @@ export default function AppointmentsPage() {
                   </div>
                 </div>
               )}
-
-              <div style={{ marginTop: "12px", display: "flex", gap: "10px" }}>
-                <button onClick={() => setViewAppointment(null)} style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1.5px solid #e2e8f0", background: "white", cursor: "pointer", fontWeight: "700", fontSize: "14px", color: "#4a5568" }}>Close</button>
+              <div style={{ marginTop: "4px", display: "flex", gap: "10px" }}>
+                <button onClick={() => setViewAppointment(null)}
+                  style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "1.5px solid #e2e8f0", background: "white", cursor: "pointer", fontWeight: "700", fontSize: "14px", color: "#4a5568" }}>
+                  Close
+                </button>
                 <button
-                  onClick={() => {
-                    const patientId = viewAppointment.patient_id;
-                    setViewAppointment(null);
-                    router.push(`/patients/${patientId}`);
-                  }}
-                  style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "none", background: "#0f4c81", color: "white", cursor: "pointer", fontWeight: "700", fontSize: "14px" }}
-                >
-                  View Patient Profile
+                  onClick={() => { setViewAppointment(null); openEdit(viewAppointment); }}
+                  style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "none", background: "#f0fdf4", color: "#166534", cursor: "pointer", fontWeight: "700", fontSize: "14px" }}>
+                  ✏️ Edit
+                </button>
+                <button
+                  onClick={() => { const pid = viewAppointment.patient_id; setViewAppointment(null); router.push(`/patients/${pid}`); }}
+                  style={{ flex: 1, padding: "12px", borderRadius: "10px", border: "none", background: "#0f4c81", color: "white", cursor: "pointer", fontWeight: "700", fontSize: "14px" }}>
+                  View Profile
                 </button>
               </div>
             </div>
