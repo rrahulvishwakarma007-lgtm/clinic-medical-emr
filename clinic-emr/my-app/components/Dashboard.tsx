@@ -31,6 +31,13 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
+    // ── Login guard ──
+    const user = localStorage.getItem("clinic_user");
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
+
     setMounted(true);
     loadDashboardData();
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -98,7 +105,6 @@ export default function Dashboard() {
     return `${hour > 12 ? hour - 12 : hour}:${m} ${hour >= 12 ? "PM" : "AM"}`;
   }
 
-  const today = new Date().toISOString().split("T")[0];
   const inputStyle: any = { width: "100%", padding: "10px 12px", border: "1.5px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", fontFamily: "inherit" };
 
   const QUICK_LINKS = [
@@ -151,13 +157,16 @@ export default function Dashboard() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "14px", marginBottom: "22px" }}>
         {[
-          { label: "Total Patients", value: stats.totalPatients, color: "#0f4c81", icon: "👥", sub: "registered" },
-          { label: "Today's Appointments", value: stats.todaysAppointments, color: "#6d28d9", icon: "📅", sub: "scheduled today" },
-          { label: "Prescriptions", value: stats.prescriptionsIssued, color: "#065f46", icon: "💊", sub: "total issued" },
-          { label: "Pending Bills", value: stats.pendingBilling, color: "#92400e", icon: "🧾", sub: "awaiting payment" },
+          { label: "Total Patients", value: stats.totalPatients, color: "#0f4c81", icon: "👥", sub: "registered", trend: "+12%" },
+          { label: "Today's Appointments", value: stats.todaysAppointments, color: "#6d28d9", icon: "📅", sub: "scheduled today", trend: "Normal" },
+          { label: "Prescriptions", value: stats.prescriptionsIssued, color: "#065f46", icon: "💊", sub: "total issued", trend: "Active" },
+          { label: "Pending Bills", value: stats.pendingBilling, color: "#92400e", icon: "🧾", sub: "awaiting payment", trend: "Action Required" },
         ].map(s => (
           <div key={s.label} className="stat-card">
-            <div style={{ fontSize: "22px", marginBottom: "8px" }}>{s.icon}</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+              <div style={{ fontSize: "22px" }}>{s.icon}</div>
+              <div style={{ fontSize: "10px", padding: "2px 6px", borderRadius: "4px", background: "#f1f5f9", color: "#64748b", fontWeight: "700" }}>{s.trend}</div>
+            </div>
             <div style={{ fontSize: "11px", color: "#999", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "4px" }}>{s.label}</div>
             <div style={{ fontSize: "30px", fontWeight: "700", color: s.color, lineHeight: 1 }}>{loading ? "—" : s.value}</div>
             <div style={{ fontSize: "11px", color: "#bbb", marginTop: "4px" }}>{s.sub}</div>
@@ -176,13 +185,16 @@ export default function Dashboard() {
       </div>
 
       {/* Main Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "16px", marginBottom: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "16px", marginBottom: "16px" }}>
 
         {/* Today's Schedule */}
         <div className="section-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <h3 style={{ fontWeight: "700", color: "#1a1a2e", fontSize: "15px", margin: 0 }}>📅 Today's Schedule</h3>
-            <button onClick={() => router.push("/appointments")} style={{ background: "none", border: "none", color: "#0f4c81", fontSize: "12px", cursor: "pointer", fontWeight: "600" }}>View All →</button>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button onClick={() => loadDashboardData()} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", cursor: "pointer" }}>Refresh</button>
+              <button onClick={() => router.push("/appointments")} style={{ background: "none", border: "none", color: "#0f4c81", fontSize: "12px", cursor: "pointer", fontWeight: "600" }}>View All →</button>
+            </div>
           </div>
           {todaysList.length === 0 ? (
             <div style={{ textAlign: "center", padding: "30px", color: "#bbb" }}>
@@ -199,7 +211,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {todaysList.map((a, i) => {
+                {todaysList.map((a) => {
                   const st = STATUS_STYLES[a.status] || STATUS_STYLES["Confirmed"];
                   return (
                     <tr key={a.id} className="appt-row" style={{ borderBottom: "1px solid #f7fafc" }}>
