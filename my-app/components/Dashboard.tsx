@@ -31,6 +31,13 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
+    // ── Login guard ──
+    const user = localStorage.getItem("clinic_user");
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
+
     setMounted(true);
     loadDashboardData();
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -98,7 +105,6 @@ export default function Dashboard() {
     return `${hour > 12 ? hour - 12 : hour}:${m} ${hour >= 12 ? "PM" : "AM"}`;
   }
 
-  const today = new Date().toISOString().split("T")[0];
   const inputStyle: any = { width: "100%", padding: "10px 12px", border: "1.5px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box", fontFamily: "inherit" };
 
   const QUICK_LINKS = [
@@ -205,7 +211,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {todaysList.map((a, i) => {
+                {todaysList.map((a) => {
                   const st = STATUS_STYLES[a.status] || STATUS_STYLES["Confirmed"];
                   return (
                     <tr key={a.id} className="appt-row" style={{ borderBottom: "1px solid #f7fafc" }}>
