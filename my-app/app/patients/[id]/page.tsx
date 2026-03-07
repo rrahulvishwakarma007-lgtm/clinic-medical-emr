@@ -91,7 +91,8 @@ export default function PatientProfile() {
             medicine: m.name,
             dosage: m.dosage,
             duration: m.duration,
-            notes: [m.route !== "Oral" ? `Route: ${m.route}` : "", m.instructions, form.notes].filter(Boolean).join(" | "),
+            route: m.route,
+            notes: [m.instructions, form.notes].filter(Boolean).join(" | "),
             diagnosis: form.diagnosis,
             followup_date: form.followup_date || null,
           }),
@@ -109,6 +110,12 @@ export default function PatientProfile() {
     const patientName = patient?.name || "Patient";
     const w = window.open("", "_blank", "width=800,height=900");
     if (!w) return;
+
+    // Split newline separated values if they exist (for multi-med support)
+    const meds = (p.medicine || "").split("\n");
+    const dosages = (p.dosage || "").split("\n");
+    const durations = (p.duration || "").split("\n");
+
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/>
     <title>Prescription - ${patientName}</title>
     <style>
@@ -159,13 +166,14 @@ export default function PatientProfile() {
     <div class="medicine-row" style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">
       <div></div><div>Medicine</div><div>Dosage</div><div>Duration</div><div>Route</div>
     </div>
+    ${meds.map((m, i) => `
     <div class="medicine-row">
-      <div class="med-num">1</div>
-      <div><div class="med-name">${p.medicine}</div></div>
-      <div><div class="med-label">Dosage</div><div class="med-val">${p.dosage || "—"}</div></div>
-      <div><div class="med-label">Duration</div><div class="med-val">${p.duration || "—"}</div></div>
-      <div><div class="med-label">Route</div><div class="med-val">Oral</div></div>
-    </div>
+      <div class="med-num">${i + 1}</div>
+      <div><div class="med-name">${m}</div></div>
+      <div><div class="med-label">Dosage</div><div class="med-val">${dosages[i] || "—"}</div></div>
+      <div><div class="med-label">Duration</div><div class="med-val">${durations[i] || "—"}</div></div>
+      <div><div class="med-label">Route</div><div class="med-val">${p.route || "Oral"}</div></div>
+    </div>`).join("")}
     ${p.notes ? `<div class="notes-box"><strong>Instructions:</strong> ${p.notes}</div>` : ""}
     ${p.followup_date ? `<div class="followup-box">📅 Follow-up Date: ${new Date(p.followup_date).toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}</div>` : ""}
     <div class="footer">
