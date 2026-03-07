@@ -837,8 +837,8 @@ export default function PrescriptionsPage() {
 
   return (
     <div style={{ padding: "2rem", minHeight: "100vh", background: "#f0f4f8", fontFamily: "'DM Sans', sans-serif" }}>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         .rx-row{transition:background 0.15s}.rx-row:hover td{background:#f0f7ff!important}
         .action-btn{border:none;cursor:pointer;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;transition:all 0.15s;font-family:inherit}
         .print-btn-sm{background:#dbeafe;color:#1e40af}.print-btn-sm:hover{background:#bfdbfe}
