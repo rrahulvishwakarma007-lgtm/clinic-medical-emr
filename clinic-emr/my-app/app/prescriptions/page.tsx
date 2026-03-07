@@ -758,6 +758,7 @@ export default function PrescriptionsPage() {
     const medicines = p.medicine.split("\n");
     const dosages = (p.dosage || "").split("\n");
     const durations = (p.duration || "").split("\n");
+    const routes = (p.route || "").split("\n");
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/>
     <title>Prescription - ${patientName}</title>
     <style>
@@ -815,7 +816,7 @@ export default function PrescriptionsPage() {
           <div><div class="med-name">${m}</div></div>
           <div><div class="med-label">Dosage</div><div class="med-val">${dosages[i]||"—"}</div></div>
           <div><div class="med-label">Duration</div><div class="med-val">${durations[i]||"—"}</div></div>
-          <div><div class="med-label">Route</div><div class="med-val">Oral</div></div>
+          <div><div class="med-label">Route</div><div class="med-val">${routes[i]||"Oral"}</div></div>
         </div>`).join("")}
     </div>
     ${p.notes?`<div class="notes-box"><strong>Instructions:</strong> ${p.notes}</div>`:""}
