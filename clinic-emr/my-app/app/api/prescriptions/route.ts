@@ -21,6 +21,7 @@ export async function GET() {
         medicine,
         dosage,
         duration,
+        route,
         notes,
         diagnosis,
         followup_date,
@@ -59,11 +60,13 @@ export async function POST(req: Request) {
       insertData.medicine = medicines.map(m => m.name).join("\n");
       insertData.dosage = medicines.map(m => m.dosage).join("\n");
       insertData.duration = medicines.map(m => m.duration).join("\n");
+      insertData.route = medicines.map(m => m.route || "Oral").join("\n");
     } else {
       if (!medicine) return NextResponse.json({ error: "Missing medicine name" }, { status: 400 });
       insertData.medicine = medicine;
       insertData.dosage = dosage || "";
       insertData.duration = duration || "";
+      insertData.route = body.route || "Oral";
     }
 
     const { data, error } = await supabase
