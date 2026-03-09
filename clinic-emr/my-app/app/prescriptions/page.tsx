@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import hospitalConfig from "@/config/hospital";
 
 const DOSAGE_PRESETS = ["1-0-1", "1-1-1", "0-0-1", "1-0-0", "0-1-0", "SOS", "Once daily", "Twice daily", "Thrice daily"];
@@ -681,7 +682,7 @@ function MedicineInput({ value, onChange }: { value: string; onChange: (v: strin
   );
 }
 
-export default function PrescriptionsPage() {
+function PrescriptionsPageInner() {
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -1119,5 +1120,13 @@ export default function PrescriptionsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PrescriptionsPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "40px", textAlign: "center", color: "#888" }}>Loading...</div>}>
+      <PrescriptionsPageInner />
+    </Suspense>
   );
 }
