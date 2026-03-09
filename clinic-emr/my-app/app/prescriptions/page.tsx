@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import hospitalConfig from "@/config/hospital";
 
 const DOSAGE_PRESETS = ["1-0-1", "1-1-1", "0-0-1", "1-0-0", "0-1-0", "SOS", "Once daily", "Twice daily", "Thrice daily"];
@@ -696,7 +697,44 @@ export default function PrescriptionsPage() {
     diagnosis: "",
   });
 
+  const searchParams = useSearchParams();
+
   useEffect(() => { loadPrescriptions(); loadPatients(); }, []);
+
+  // ── Voice pre-fill: runs after patients are loaded ──
+  useEffect(() => {
+    if (searchParams.get("voice") !== "1") return;
+    if (patients.length === 0) return;
+    const raw = sessionStorage.getItem("voice_prescription");
+    if (!raw) return;
+    try {
+      sessionStorage.removeItem("voice_prescription");
+      const data = JSON.parse(raw);
+      const mappedMeds: Medicine[] = (data.medicines || []).map((m: any) => ({
+        name: m.medicine || "",
+        dosage: [m.dosage, m.frequency].filter(Boolean).join(" — ") || "",
+        duration: m.duration || "",
+        route: m.route || "Oral",
+        instructions: m.instructions || "",
+      }));
+      let patient_id = "";
+      if (data.patient_name) {
+        const match = patients.find((p: any) =>
+          p.name.toLowerCase().includes(data.patient_name.toLowerCase()) ||
+          data.patient_name.toLowerCase().includes(p.name.toLowerCase())
+        );
+        if (match) patient_id = match.id;
+      }
+      setForm({
+        patient_id,
+        medicines: mappedMeds.length > 0 ? mappedMeds : [{ name: "", dosage: "", duration: "", route: "Oral", instructions: "" }],
+        notes: data.notes || "",
+        diagnosis: data.diagnosis || "",
+      });
+      setShowAdd(true);
+      window.history.replaceState({}, "", "/prescriptions");
+    } catch (e) { console.error("Voice pre-fill error", e); }
+  }, [patients, searchParams]);
 
   async function loadPrescriptions() {
     setPageLoading(true);
