@@ -2,7 +2,7 @@
 import { useState } from "react";
 import SidebarNav from "@/components/SidebarNav";
 import hospitalConfig from "@/config/hospital";
-import VoicePrescription from "@/components/VoicePrescription";
+import VoiceAssistant from "@/components/VoiceAssistant";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
@@ -59,7 +59,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* 🎙️ Floating Voice Prescription — visible on all pages */}
-      <VoicePrescription />
+      <VoiceAssistant />
     </div>
   );
 }
