@@ -2,13 +2,12 @@
 import { useState } from "react";
 import SidebarNav from "@/components/SidebarNav";
 import hospitalConfig from "@/config/hospital";
+import VoicePrescription from "@/components/VoicePrescription";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
-
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f0f4f8" }}>
-
       {/* Sidebar */}
       <aside style={{
         width: open ? "220px" : "0px",
@@ -33,9 +32,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main area */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-
         {/* Top bar with toggle button */}
-        <div style={{ height: "48px", background: "white", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", paddingLeft: "12px", gap: "12px", position: "sticky", top: 0, zIndex: 99, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <div style={{
+          height: "48px", background: "white", borderBottom: "1px solid #e2e8f0",
+          display: "flex", alignItems: "center", paddingLeft: "12px", gap: "12px",
+          position: "sticky", top: 0, zIndex: 99, boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
+        }}>
           <button
             onClick={() => setOpen(o => !o)}
             style={{ background: "none", border: "none", cursor: "pointer", padding: "6px 8px", borderRadius: "6px", display: "flex", flexDirection: "column", gap: "4px", transition: "background 0.15s" }}
@@ -55,6 +57,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+
+      {/* 🎙️ Floating Voice Prescription — visible on all pages */}
+      <VoicePrescription />
     </div>
   );
 }
