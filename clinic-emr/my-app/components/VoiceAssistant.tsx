@@ -55,7 +55,7 @@ interface Message {
   role: "assistant" | "user";
   text: string;
   time: string;
-  fieldFilled?: string; // shows which field was auto-filled
+  fieldFilled?: string;
 }
 
 declare global {
@@ -69,7 +69,6 @@ function nowTime() {
   return new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 }
 
-// ─── Field Fill Animation Card ────────────────────────────────────────────────
 function FieldFillBadge({ field }: { field: string }) {
   return (
     <div style={{
@@ -80,6 +79,25 @@ function FieldFillBadge({ field }: { field: string }) {
       ✅ {field} filled
     </div>
   );
+}
+
+// ─── Best voice picker ────────────────────────────────────────────────────────
+// Priority: Hindi female > Hindi any > English India female > English UK female > any English female
+function pickBestVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+  const hi = voices.filter(v => v.lang.startsWith("hi"));
+  if (hi.length) {
+    const hiFemale = hi.find(v => /female|woman|girl/i.test(v.name));
+    return hiFemale || hi[0];
+  }
+  const enIN = voices.filter(v => v.lang === "en-IN");
+  if (enIN.length) {
+    const enINFemale = enIN.find(v => /female|woman|girl/i.test(v.name));
+    return enINFemale || enIN[0];
+  }
+  const enUKFemale = voices.find(v => v.name.includes("Google UK English Female"));
+  if (enUKFemale) return enUKFemale;
+  const anyFemale = voices.find(v => /female|samantha|karen|moira|tessa|fiona/i.test(v.name) && v.lang.startsWith("en"));
+  return anyFemale || voices.find(v => v.lang.startsWith("en")) || null;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -94,6 +112,7 @@ export default function VoiceAssistant() {
   const [interimText, setInterimText] = useState("");
   const [pulse, setPulse] = useState(false);
   const [filledFields, setFilledFields] = useState<string[]>([]);
+  const [voicesLoaded, setVoicesLoaded] = useState(false);
 
   const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
@@ -103,35 +122,71 @@ export default function VoiceAssistant() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mouthInterval = useRef<any>(null);
   const [mouthOpen, setMouthOpen] = useState(false);
+  const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
 
   useEffect(() => { stageRef.current = stage; }, [stage]);
   useEffect(() => { collectedRef.current = collected; }, [collected]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  // ── Load voices (async, browser may delay loading) ────────────────────────
   useEffect(() => {
-    if (typeof window !== "undefined") synthRef.current = window.speechSynthesis;
+    if (typeof window === "undefined") return;
+    synthRef.current = window.speechSynthesis;
+
+    const loadVoices = () => {
+      const v = synthRef.current!.getVoices();
+      if (v.length) {
+        voicesRef.current = v;
+        setVoicesLoaded(true);
+      }
+    };
+
+    loadVoices();
+    // Chrome fires voiceschanged asynchronously
+    if (synthRef.current) {
+      synthRef.current.onvoiceschanged = loadVoices;
+    }
+    // Fallback: poll for 3 seconds
+    const poll = setInterval(() => {
+      const v = synthRef.current?.getVoices() || [];
+      if (v.length) {
+        voicesRef.current = v;
+        setVoicesLoaded(true);
+        clearInterval(poll);
+      }
+    }, 200);
+    const timeout = setTimeout(() => clearInterval(poll), 3000);
+    return () => { clearInterval(poll); clearTimeout(timeout); };
   }, []);
+
   useEffect(() => {
     const t = setInterval(() => setPulse(p => !p), 2000);
     return () => clearInterval(t);
   }, []);
 
   // ── Speak ──────────────────────────────────────────────────────────────────
+  // Key fix: use hi-IN voice for proper Hindi pronunciation
   const speak = useCallback((text: string, onDone?: () => void) => {
     if (!synthRef.current) { onDone?.(); return; }
     synthRef.current.cancel();
+
     const utter = new SpeechSynthesisUtterance(text);
 
-    const voices = synthRef.current.getVoices();
-    const voice =
-      voices.find(v => v.name.includes("Google UK English Female")) ||
-      voices.find(v => v.name.includes("Samantha")) ||
-      voices.find(v => v.name.toLowerCase().includes("female") && v.lang.startsWith("en")) ||
-      voices.find(v => v.lang === "en-IN") ||
-      voices.find(v => v.lang.startsWith("en"));
+    // Pick best available voice
+    const voices = voicesRef.current.length
+      ? voicesRef.current
+      : synthRef.current.getVoices();
 
-    if (voice) utter.voice = voice;
-    utter.lang = "en-IN";
-    utter.rate = 0.9;
+    const best = pickBestVoice(voices);
+    if (best) {
+      utter.voice = best;
+      // Use hi-IN lang so browser attempts Hindi phonetics
+      utter.lang = best.lang.startsWith("hi") ? "hi-IN" : "en-IN";
+    } else {
+      utter.lang = "hi-IN";
+    }
+
+    utter.rate = 0.88;   // slightly slower so Hindi words are clear
     utter.pitch = 1.1;
     utter.volume = 1;
 
@@ -145,14 +200,41 @@ export default function VoiceAssistant() {
       clearInterval(mouthInterval.current);
       onDone?.();
     };
-    utter.onerror = () => {
+    utter.onerror = (e) => {
+      console.warn("TTS error:", e);
       setIsSpeaking(false);
       setMouthOpen(false);
       clearInterval(mouthInterval.current);
       onDone?.();
     };
 
+    // Chrome bug: synthesis can silently stall after ~15s, kick it
     synthRef.current.speak(utter);
+    let keepAlive: any;
+    if (typeof window !== "undefined") {
+      keepAlive = setInterval(() => {
+        if (synthRef.current?.speaking) {
+          synthRef.current.pause();
+          synthRef.current.resume();
+        } else {
+          clearInterval(keepAlive);
+        }
+      }, 10000);
+    }
+    utter.onend = () => {
+      clearInterval(keepAlive);
+      setIsSpeaking(false);
+      setMouthOpen(false);
+      clearInterval(mouthInterval.current);
+      onDone?.();
+    };
+    utter.onerror = () => {
+      clearInterval(keepAlive);
+      setIsSpeaking(false);
+      setMouthOpen(false);
+      clearInterval(mouthInterval.current);
+      onDone?.();
+    };
   }, []);
 
   // ── Add message ────────────────────────────────────────────────────────────
@@ -161,35 +243,73 @@ export default function VoiceAssistant() {
   }, []);
 
   // ── Listen ─────────────────────────────────────────────────────────────────
+  // KEY FIX: Use en-IN as primary language for recognition.
+  // en-IN handles Hinglish (mixed Hindi+English) FAR better than hi-IN in Web Speech API,
+  // especially for medical terms like "Paracetamol", "BP", "fever", "twice daily", etc.
+  // We also try multiple languages sequentially if the first yields no result.
   const listen = useCallback((onResult: (text: string) => void) => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { onResult(""); return; }
+    if (!SR) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome.");
+      onResult("");
+      return;
+    }
 
     finalRef.current = "";
     setInterimText("");
     setIsListening(true);
 
     const rec = new SR();
-    rec.continuous = false;
+    rec.continuous = true;          // Keep listening until silence
     rec.interimResults = true;
-    rec.lang = "hi-IN"; // handles Hinglish best
-    rec.maxAlternatives = 1;
+    // en-IN handles Hinglish best — recognises both Devanagari-romanised Hindi and English medical terms
+    rec.lang = "en-IN";
+    rec.maxAlternatives = 3;        // Give us alternatives to pick best
+
+    let silenceTimer: any = null;
 
     rec.onresult = (e: any) => {
+      // Reset silence timer on every result
+      clearTimeout(silenceTimer);
+
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) finalRef.current += t + " ";
-        else interim += t;
+        const transcript = e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          finalRef.current += transcript + " ";
+        } else {
+          interim += transcript;
+        }
       }
       setInterimText(interim);
+
+      // Auto-stop after 1.5s of silence post last word
+      silenceTimer = setTimeout(() => {
+        rec.stop();
+      }, 1500);
     };
+
     rec.onend = () => {
+      clearTimeout(silenceTimer);
       setIsListening(false);
       setInterimText("");
-      onResult(finalRef.current.trim());
+      const result = finalRef.current.trim();
+      onResult(result);
     };
-    rec.onerror = () => { setIsListening(false); onResult(""); };
+
+    rec.onerror = (e: any) => {
+      clearTimeout(silenceTimer);
+      console.warn("STT error:", e.error);
+      setIsListening(false);
+      setInterimText("");
+      // On "no-speech" — retry once automatically
+      if (e.error === "no-speech") {
+        onResult("");
+      } else {
+        onResult(finalRef.current.trim() || "");
+      }
+    };
+
     recognitionRef.current = rec;
     rec.start();
   }, []);
@@ -203,6 +323,8 @@ export default function VoiceAssistant() {
         model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
         system: `You are Maya, a friendly AI assistant inside a clinic EMR system in India. You speak in Hinglish (mix of Hindi and English) — casual, warm, like a real Indian clinic staff member.
+
+IMPORTANT FOR TTS: Since the text-to-speech may use an English voice, write Hindi words in a way that sounds natural when read aloud by an English TTS. Keep responses SHORT (1-2 sentences max). Use common Hinglish phrases that an English TTS can pronounce clearly. Avoid pure Devanagari script — use Roman transliteration only.
 
 You are currently in stage: "${currentStage}"
 Collected data so far: ${JSON.stringify(data, null, 2)}
@@ -219,22 +341,22 @@ Stage-specific extraction:
 - ask_diagnosis: extract diagnosis/condition name
 - ask_medicines: extract ALL medicines with dosage, frequency, duration, route (default Oral), instructions
 - ask_notes: extract follow-up instructions, rest advice, diet etc
-- confirming: if doctor says haan/yes/sahi/theek/ok → nextStage="done", else ask what to correct
+- confirming: if doctor says haan/yes/sahi/theek/ok/correct/confirm → nextStage="done", else ask what to correct
 
-Example Hinglish replies:
-- "Theek hai, Rahul Sharma — age batayein?"
-- "Got it! 3 din se fever aur headache. Koi diagnosis?"
-- "Perfect! Paracetamol 500mg twice daily note kar liya. Koi aur medicine?"
-- "Sab theek lag raha hai. Confirm karein?"
+Example replies (short, TTS-friendly Hinglish):
+- "Theek hai, Rahul Sharma note kar liya. Age batayein?"
+- "Got it! Teen din se fever aur headache. Koi diagnosis?"
+- "Perfect! Paracetamol 500mg twice daily. Koi aur medicine?"
+- "Sab theek hai. Confirm karein?"
 
 Respond ONLY with valid JSON (no markdown):
 {
-  "reply": "Maya's Hinglish response — warm, max 2 sentences",
+  "reply": "Maya's Hinglish response — max 2 short sentences, Roman script only",
   "extracted": {
-    "patient": { "name":"", "age":"", "phone":"", "symptoms":"", "symptom_duration":"" },
+    "patient": { "name":"", "age":"", "phone":"" },
     "prescription": { "diagnosis":"", "symptoms":"", "symptom_duration":"", "medicines":[], "notes":"" }
   },
-  "filledField": "human-readable label of what was just filled, e.g. 'Patient Name', 'Age', 'Symptoms'",
+  "filledField": "human-readable label of what was just filled e.g. Patient Name",
   "nextStage": "next stage string"
 }
 Only include extracted fields relevant to current stage. medicines format: [{medicine,dosage,frequency,duration,route,instructions}]`,
@@ -250,8 +372,7 @@ Only include extracted fields relevant to current stage. medicines format: [{med
   // ── Handle doctor's response ───────────────────────────────────────────────
   const handleResponse = useCallback(async (userText: string) => {
     if (!userText) {
-      // No speech detected — ask again
-      const retry = "Lagta hai aapki awaaz nahi aayi. Dobara bolein please?";
+      const retry = "Lagta hai awaaz nahi aayi. Please dobara bolein.";
       addMsg("assistant", retry);
       speak(retry, () => setTimeout(() => listen(handleResponse), 300));
       return;
@@ -265,22 +386,18 @@ Only include extracted fields relevant to current stage. medicines format: [{med
         userText, stageRef.current, collectedRef.current
       );
 
-      // Merge extracted data
       setCollected(prev => {
         const next = {
           patient: { ...prev.patient, ...(extracted?.patient || {}) },
           prescription: { ...prev.prescription, ...(extracted?.prescription || {}) }
         };
-        // Merge medicines (don't overwrite, append)
         if (extracted?.prescription?.medicines?.length > 0) {
           next.prescription.medicines = extracted.prescription.medicines;
         }
         return next;
       });
 
-      if (filledField) {
-        setFilledFields(prev => [...prev, filledField]);
-      }
+      if (filledField) setFilledFields(prev => [...prev, filledField]);
 
       addMsg("assistant", reply, filledField);
       setStage(nextStage as Stage);
@@ -288,7 +405,6 @@ Only include extracted fields relevant to current stage. medicines format: [{med
       if (nextStage === "done") {
         speak(reply, () => {
           setTimeout(() => {
-            // Package everything for prescription page
             const c = collectedRef.current;
             sessionStorage.setItem("voice_prescription", JSON.stringify({
               patient_name: c.patient.name || "",
@@ -308,10 +424,11 @@ Only include extracted fields relevant to current stage. medicines format: [{med
 
       speak(reply, () => setTimeout(() => listen(handleResponse), 300));
 
-    } catch {
-      const err = "Sorry, kuch problem ho gayi. Dobara bolein?";
-      addMsg("assistant", err);
-      speak(err, () => setTimeout(() => listen(handleResponse), 300));
+    } catch (err) {
+      console.error("AI error:", err);
+      const errMsg = "Sorry, kuch problem ho gayi. Dobara bolein?";
+      addMsg("assistant", errMsg);
+      speak(errMsg, () => setTimeout(() => listen(handleResponse), 300));
       setStage(stageRef.current);
     }
   }, [addMsg, processWithAI, speak, listen, router]);
@@ -415,6 +532,17 @@ Only include extracted fields relevant to current stage. medicines format: [{med
         </div>
       )}
 
+      {/* Voice status banner */}
+      {!voicesLoaded && isOpen && (
+        <div style={{
+          position: "fixed", top: "12px", left: "50%", transform: "translateX(-50%)",
+          zIndex: 10001, background: "#fef3c7", color: "#92400e",
+          padding: "6px 16px", borderRadius: "20px", fontSize: "12px", fontWeight: "600"
+        }}>
+          ⏳ Voices load ho rahi hain...
+        </div>
+      )}
+
       {/* ── Main Panel ── */}
       {isOpen && (
         <div style={{
@@ -461,7 +589,6 @@ Only include extracted fields relevant to current stage. medicines format: [{med
                   </div>
                 ))}
 
-                {/* Medicines detail */}
                 {(collected.prescription.medicines?.length || 0) > 0 && (
                   <div style={{ marginTop: "4px" }}>
                     {collected.prescription.medicines!.map((m, i) => (
@@ -511,7 +638,6 @@ Only include extracted fields relevant to current stage. medicines format: [{med
                   </div>
                 </div>
 
-                {/* Progress */}
                 <div style={{ marginTop: "12px" }}>
                   <div style={{ height: "4px", background: "rgba(255,255,255,0.2)", borderRadius: "2px" }}>
                     <div style={{ height: "100%", background: "white", borderRadius: "2px", width: `${progressPct}%`, transition: "width 0.5s ease" }} />
@@ -542,7 +668,6 @@ Only include extracted fields relevant to current stage. medicines format: [{med
                   </div>
                 ))}
 
-                {/* Thinking dots */}
                 {stage === "thinking" && (
                   <div style={{ display: "flex", justifyContent: "flex-start" }}>
                     <div style={{ background: "white", padding: "10px 14px", borderRadius: "4px 14px 14px 14px", boxShadow: "0 1px 3px rgba(0,0,0,0.07)" }}>
