@@ -313,7 +313,7 @@ medicines format: [{medicine,dosage,frequency,duration,route,instructions}]`,
                       </div>
                     ):(
                       <div style={{ fontSize:"12px",color:"#ccc",fontStyle:"italic" }}>
-                        {stage===`ask_${f.key}"||(f.key==="medicines"&&stage==="ask_medicines`)?"🎤 Sun rahi hoon...":"Abhi nahi..."}
+                        {(stage === `ask_${f.key}` || (f.key === "medicines" && stage === "ask_medicines")) ? "🎤 Sun rahi hoon..." : "Abhi nahi..."}
                       </div>
                     )}
                   </div>
