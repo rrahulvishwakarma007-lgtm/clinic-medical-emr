@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import hospitalConfig from "@/config/hospital";
 
 const DOSAGE_PRESETS = ["1-0-1", "1-1-1", "0-0-1", "1-0-0", "0-1-0", "SOS", "Once daily", "Twice daily", "Thrice daily"];
@@ -680,21 +682,8 @@ function MedicineInput({ value, onChange }: { value: string; onChange: (v: strin
   );
 }
 
-interface Prescription {
-  id: string;
-  patient_id: string;
-  medicine: string;
-  dosage: string;
-  duration: string;
-  notes?: string;
-  diagnosis?: string;
-  created_at?: string;
-  route?: string;
-  patients?: { name: string };
-}
-
-export default function PrescriptionsPage() {
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+function PrescriptionsPageInner() {
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -709,7 +698,44 @@ export default function PrescriptionsPage() {
     diagnosis: "",
   });
 
+  const searchParams = useSearchParams();
+
   useEffect(() => { loadPrescriptions(); loadPatients(); }, []);
+
+  // ── Voice pre-fill: runs after patients are loaded ──
+  useEffect(() => {
+    if (searchParams.get("voice") !== "1") return;
+    if (patients.length === 0) return;
+    const raw = sessionStorage.getItem("voice_prescription");
+    if (!raw) return;
+    try {
+      sessionStorage.removeItem("voice_prescription");
+      const data = JSON.parse(raw);
+      const mappedMeds: Medicine[] = (data.medicines || []).map((m: any) => ({
+        name: m.medicine || "",
+        dosage: [m.dosage, m.frequency].filter(Boolean).join(" — ") || "",
+        duration: m.duration || "",
+        route: m.route || "Oral",
+        instructions: m.instructions || "",
+      }));
+      let patient_id = "";
+      if (data.patient_name) {
+        const match = patients.find((p: any) =>
+          p.name.toLowerCase().includes(data.patient_name.toLowerCase()) ||
+          data.patient_name.toLowerCase().includes(p.name.toLowerCase())
+        );
+        if (match) patient_id = match.id;
+      }
+      setForm({
+        patient_id,
+        medicines: mappedMeds.length > 0 ? mappedMeds : [{ name: "", dosage: "", duration: "", route: "Oral", instructions: "" }],
+        notes: data.notes || "",
+        diagnosis: data.diagnosis || "",
+      });
+      setShowAdd(true);
+      window.history.replaceState({}, "", "/prescriptions");
+    } catch (e) { console.error("Voice pre-fill error", e); }
+  }, [patients, searchParams]);
 
   async function loadPrescriptions() {
     setPageLoading(true);
@@ -747,13 +773,7 @@ export default function PrescriptionsPage() {
       const res = await fetch("/api/prescriptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          patient_id: form.patient_id, 
-          medicines: form.medicines, 
-          notes: form.notes, 
-          diagnosis: form.diagnosis,
-          route: form.medicines[0]?.route || "Oral"
-        }),
+        body: JSON.stringify({ patient_id: form.patient_id, medicines: form.medicines, notes: form.notes, diagnosis: form.diagnosis }),
       });
       const result = await res.json();
       if (result.error) throw new Error(result.error);
@@ -774,13 +794,12 @@ export default function PrescriptionsPage() {
     const patientName = p.patients?.name || patients.find(pat => pat.id === p.patient_id)?.name || "Patient";
     const w = window.open("", "_blank", "width=800,height=900");
     if (!w) return;
-    const medsList = (p.medicine || "").split("\n");
+    const medicines = p.medicine.split("\n");
     const dosages = (p.dosage || "").split("\n");
     const durations = (p.duration || "").split("\n");
-    const route = p.route || "Oral";
-
+    const routes = (p.route || "").split("\n");
     w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/>
-    <title>Prescription - \${patientName}</title>
+    <title>Prescription - ${patientName}</title>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap');
       *{margin:0;padding:0;box-sizing:border-box}
@@ -810,45 +829,42 @@ export default function PrescriptionsPage() {
     </style></head><body>
     <div class="header">
       <div>
-        <div class="clinic-name">\${hospitalConfig.name}</div>
-        <div class="clinic-sub">\${hospitalConfig.address}, \${hospitalConfig.city}, \${hospitalConfig.state}<br/>Phone: \${hospitalConfig.phone} &nbsp;|&nbsp; \${hospitalConfig.email}</div>
+        <div class="clinic-name">${hospitalConfig.name}</div>
+        <div class="clinic-sub">${hospitalConfig.address}, ${hospitalConfig.city}, ${hospitalConfig.state}<br/>Phone: ${hospitalConfig.phone} &nbsp;|&nbsp; ${hospitalConfig.email}</div>
       </div>
       <div class="doctor-info">
-        <div class="doctor-name">\${hospitalConfig.doctorName}</div>
-        <div>\${hospitalConfig.doctorDegree}</div><div>\${hospitalConfig.department}</div>
+        <div class="doctor-name">${hospitalConfig.doctorName}</div>
+        <div>${hospitalConfig.doctorDegree}</div><div>${hospitalConfig.department}</div>
         <div>Reg. No: MCI-XXXXX</div>
       </div>
     </div>
     <div class="patient-box">
-      <div><div class="label">Patient Name</div><div class="value">\${patientName}</div></div>
-      <div><div class="label">Date</div><div class="value">\${new Date(p.created_at || Date.now()).toLocaleDateString("en-IN",{day:"2-digit",month:"long",year:"numeric"})}</div></div>
-      <div><div class="label">Prescription ID</div><div class="value" style="font-family:monospace;font-size:12px">RX-\${(p.id||"").slice(0,8).toUpperCase()}</div></div>
-      \${p.diagnosis ? \`<div style="grid-column:1/-1"><div class="label">Diagnosis / Chief Complaint</div><div class="value">\${p.diagnosis}</div></div>\` : ""}
+      <div><div class="label">Patient Name</div><div class="value">${patientName}</div></div>
+      <div><div class="label">Date</div><div class="value">${new Date(p.created_at || Date.now()).toLocaleDateString("en-IN",{day:"2-digit",month:"long",year:"numeric"})}</div></div>
+      <div><div class="label">Prescription ID</div><div class="value" style="font-family:monospace;font-size:12px">RX-${(p.id||"").slice(0,8).toUpperCase()}</div></div>
+      ${p.diagnosis?`<div style="grid-column:1/-1"><div class="label">Diagnosis / Chief Complaint</div><div class="value">${p.diagnosis}</div></div>`:""}
     </div>
     <div class="rx-title">℞ &nbsp; Prescribed Medications</div>
     <div>
       <div class="medicine-row" style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">
         <div></div><div>Medicine</div><div>Dosage</div><div>Duration</div><div>Route</div>
       </div>
-      \${medsList.map((m: any, i: number) => \`
+      ${medicines.map((m:string,i:number)=>`
         <div class="medicine-row">
-          <div class="med-num">\${i + 1}</div>
-          <div><div class="med-name">\${m}</div></div>
-          <div><div class="med-label">Dosage</div><div class="med-val">\${dosages[i] || "—"}</div></div>
-          <div><div class="med-label">Duration</div><div class="med-val">\${durations[i] || "—"}</div></div>
-          <div><div class="med-label">Route</div><div class="med-val">\${route}</div></div>
-        </div>\`).join("")}
+          <div class="med-num">${i+1}</div>
+          <div><div class="med-name">${m}</div></div>
+          <div><div class="med-label">Dosage</div><div class="med-val">${dosages[i]||"—"}</div></div>
+          <div><div class="med-label">Duration</div><div class="med-val">${durations[i]||"—"}</div></div>
+          <div><div class="med-label">Route</div><div class="med-val">${routes[i]||"Oral"}</div></div>
+        </div>`).join("")}
     </div>
-    \${p.notes ? \`<div class="notes-box"><strong>Instructions:</strong><br/>\${p.notes}</div>\` : ""}
+    ${p.notes?`<div class="notes-box"><strong>Instructions:</strong> ${p.notes}</div>`:""}
     <div class="footer">
-      <div class="footer-note">Note: This is a digitally generated prescription. Please consult the doctor if symptoms persist.<br/>Scan QR code on our website for digital copy.</div>
-      <div class="sign-area">
-        <div class="sign-line"></div>
-        <div class="sign-label">Authorized Signatory<br/>\${hospitalConfig.doctorName}</div>
-      </div>
+      <div class="footer-note">This is a computer-generated prescription.<br/>Valid for 30 days from date of issue.<br/>${hospitalConfig.name} &bull; ${hospitalConfig.appName}</div>
+      <div class="sign-area"><div class="sign-line"></div><div class="sign-label">${hospitalConfig.doctorName}</div><div class="sign-label" style="color:#aaa">${hospitalConfig.doctorDegree}</div></div>
     </div>
-    <script>window.onload = () => { window.print(); window.close(); }</script>
-    </body></html>\`);
+    <script>window.onload=()=>window.print()<\/script>
+    </body></html>`);
     w.document.close();
   }
 
@@ -861,8 +877,8 @@ export default function PrescriptionsPage() {
 
   return (
     <div style={{ padding: "2rem", minHeight: "100vh", background: "#f0f4f8", fontFamily: "'DM Sans', sans-serif" }}>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         .rx-row{transition:background 0.15s}.rx-row:hover td{background:#f0f7ff!important}
         .action-btn{border:none;cursor:pointer;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;transition:all 0.15s;font-family:inherit}
         .print-btn-sm{background:#dbeafe;color:#1e40af}.print-btn-sm:hover{background:#bfdbfe}
@@ -1104,5 +1120,13 @@ export default function PrescriptionsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PrescriptionsPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "40px", textAlign: "center", color: "#888" }}>Loading...</div>}>
+      <PrescriptionsPageInner />
+    </Suspense>
   );
 }

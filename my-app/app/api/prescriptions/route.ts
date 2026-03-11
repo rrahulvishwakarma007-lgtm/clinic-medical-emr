@@ -21,10 +21,10 @@ export async function GET() {
         medicine,
         dosage,
         duration,
+        route,
         notes,
         diagnosis,
         followup_date,
-        route,
         created_at,
         patients ( name )
       `)
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     try { body = await req.json(); }
     catch { return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 }); }
 
-    const { patient_id, medicine, dosage, duration, notes, diagnosis, followup_date, medicines, route } = body;
+    const { patient_id, medicine, dosage, duration, notes, diagnosis, followup_date, medicines } = body;
 
     if (!patient_id) {
       return NextResponse.json({ error: "Missing required field: patient_id" }, { status: 400 });
@@ -54,18 +54,19 @@ export async function POST(req: Request) {
       diagnosis: diagnosis || "",
       notes: notes || "",
       followup_date: followup_date || null,
-      route: route || "Oral",
     };
 
     if (Array.isArray(medicines) && medicines.length > 0) {
       insertData.medicine = medicines.map(m => m.name).join("\n");
       insertData.dosage = medicines.map(m => m.dosage).join("\n");
       insertData.duration = medicines.map(m => m.duration).join("\n");
+      insertData.route = medicines.map(m => m.route || "Oral").join("\n");
     } else {
       if (!medicine) return NextResponse.json({ error: "Missing medicine name" }, { status: 400 });
       insertData.medicine = medicine;
       insertData.dosage = dosage || "";
       insertData.duration = duration || "";
+      insertData.route = body.route || "Oral";
     }
 
     const { data, error } = await supabase
