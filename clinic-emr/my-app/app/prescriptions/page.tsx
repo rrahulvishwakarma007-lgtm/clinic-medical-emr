@@ -1,5 +1,4 @@
 "use client";
-export const dynamic = "force-dynamic";
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -10,7 +9,278 @@ const DURATION_PRESETS = ["3 days", "5 days", "7 days", "10 days", "14 days", "1
 const ROUTE_OPTIONS = ["Oral", "Topical", "Inhalation", "Injection", "IV Injection", "IM Injection", "Sublingual", "Nasal Drops", "Nasal Spray", "Eye Drops", "Eye Ointment", "Ear Drops", "Vaginal", "Rectal", "Transdermal Patch"];
 
 // ════════════════════════════════════════════════
-//  MEDICINE DATABASE  (1300+ entries)
+//  ★ DRUG INTERACTION ENGINE (ADDED)
+//  Maps keywords in medicine names → generic group
+//  Checks all prescribed pairs for known interactions
+// ════════════════════════════════════════════════
+interface InteractionWarning { drug1: string; drug2: string; severity: "high" | "moderate"; message: string; }
+
+const GENERIC_MAP: Array<{
+  keywords: string[];
+  generic: string;
+  interactions: string[];
+  warnings: string[];
+  isHigh?: boolean;
+}> = [
+  { keywords: ["warfarin"], generic: "warfarin", isHigh: true,
+    interactions: ["aspirin","ibuprofen","diclofenac","naproxen","etoricoxib","celecoxib","meloxicam","indomethacin","aceclofenac","mefenamic","piroxicam","ketorolac","metronidazole","fluconazole","clarithromycin","azithromycin","ciprofloxacin","levofloxacin","amiodarone","omeprazole","clopidogrel","sertraline","fluoxetine"],
+    warnings: ["Narrow therapeutic window — monitor INR regularly","Many drug interactions — always check before adding new medicine"] },
+
+  { keywords: ["digoxin"], generic: "digoxin", isHigh: true,
+    interactions: ["amiodarone","clarithromycin","azithromycin","verapamil","diltiazem","furosemide","spironolactone","itraconazole","fluconazole"],
+    warnings: ["Narrow therapeutic index — monitor serum levels","Toxicity risk with electrolyte imbalance"] },
+
+  { keywords: ["lithium"], generic: "lithium", isHigh: true,
+    interactions: ["ibuprofen","diclofenac","naproxen","etoricoxib","celecoxib","meloxicam","indomethacin","metronidazole","furosemide","spironolactone","enalapril","ramipril","lisinopril","losartan","telmisartan"],
+    warnings: ["Narrow therapeutic index — monitor serum lithium levels","NSAIDs can raise lithium levels dangerously"] },
+
+  { keywords: ["methotrexate"], generic: "methotrexate", isHigh: true,
+    interactions: ["ibuprofen","diclofenac","naproxen","aspirin","etoricoxib","celecoxib","cotrimoxazole","co-trimoxazole","omeprazole","pantoprazole","amoxicillin-clavulanate"],
+    warnings: ["Serious toxicity risk with NSAIDs — avoid combination","Monitor CBC and LFT regularly"] },
+
+  { keywords: ["phenytoin"], generic: "phenytoin", isHigh: true,
+    interactions: ["fluconazole","itraconazole","metronidazole","omeprazole","pantoprazole","isoniazid","carbamazepine","valproate","valproic"],
+    warnings: ["Narrow therapeutic index — monitor drug levels","Many interactions — review before adding any medicine"] },
+
+  { keywords: ["carbamazepine"], generic: "carbamazepine",
+    interactions: ["clarithromycin","erythromycin","fluconazole","itraconazole","verapamil","diltiazem","isoniazid","valproate","valproic","lamotrigine","sertraline","fluoxetine","paroxetine"],
+    warnings: ["Induces liver enzymes — reduces efficacy of many drugs","Do not stop abruptly — risk of seizures"] },
+
+  { keywords: ["valproate","valproic","sodium valproate"], generic: "valproate",
+    interactions: ["carbamazepine","lamotrigine","phenytoin","aspirin","sertraline","fluoxetine"],
+    warnings: ["Teratogenic — avoid in pregnancy","Hepatotoxicity risk — monitor LFTs"] },
+
+  { keywords: ["amiodarone"], generic: "amiodarone", isHigh: true,
+    interactions: ["digoxin","warfarin","simvastatin","atorvastatin","rosuvastatin","metoprolol","atenolol","bisoprolol","carvedilol"],
+    warnings: ["Many serious interactions","Thyroid, pulmonary, and hepatic toxicity — monitor regularly"] },
+
+  { keywords: ["clopidogrel"], generic: "clopidogrel",
+    interactions: ["omeprazole","esomeprazole","aspirin","ibuprofen","diclofenac","naproxen","warfarin"],
+    warnings: ["Avoid omeprazole/esomeprazole — reduces antiplatelet effect","Increased bleeding risk with NSAIDs or warfarin"] },
+
+  { keywords: ["aspirin"], generic: "aspirin",
+    interactions: ["ibuprofen","diclofenac","naproxen","etoricoxib","clopidogrel","warfarin","methotrexate","enalapril","ramipril","lisinopril","losartan","telmisartan"],
+    warnings: ["Take after food","GI bleeding risk — use with PPI if on long-term therapy"] },
+
+  { keywords: ["ibuprofen"], generic: "ibuprofen",
+    interactions: ["aspirin","warfarin","lithium","methotrexate","enalapril","ramipril","lisinopril","furosemide","spironolactone","clopidogrel"],
+    warnings: ["Take after food","Avoid in peptic ulcer, renal disease, heart failure","Avoid with other NSAIDs"] },
+
+  { keywords: ["diclofenac"], generic: "diclofenac",
+    interactions: ["aspirin","warfarin","lithium","methotrexate","enalapril","ramipril","lisinopril","furosemide","clopidogrel"],
+    warnings: ["Take after food","Avoid in peptic ulcer, renal disease","Avoid with other NSAIDs"] },
+
+  { keywords: ["metronidazole","ornidazole"], generic: "metronidazole",
+    interactions: ["warfarin","lithium","phenytoin"],
+    warnings: ["Avoid alcohol completely during course","Take after food"] },
+
+  { keywords: ["fluconazole"], generic: "fluconazole",
+    interactions: ["warfarin","phenytoin","carbamazepine","cyclosporine","tacrolimus","simvastatin","atorvastatin","rosuvastatin","glimepiride","glipizide","gliclazide"],
+    warnings: ["Inhibits CYP enzymes — many interactions possible"] },
+
+  { keywords: ["itraconazole"], generic: "itraconazole",
+    interactions: ["warfarin","digoxin","simvastatin","atorvastatin","rosuvastatin","carbamazepine","amlodipine","nifedipine","felodipine","midazolam","alprazolam","diazepam"],
+    warnings: ["Take after fatty meal","Strong CYP3A4 inhibitor — many interactions"] },
+
+  { keywords: ["clarithromycin"], generic: "clarithromycin",
+    interactions: ["warfarin","digoxin","carbamazepine","simvastatin","atorvastatin","rosuvastatin","midazolam","alprazolam","diazepam","colchicine"],
+    warnings: ["Strong CYP3A4 inhibitor — check all concurrent medicines"] },
+
+  { keywords: ["azithromycin"], generic: "azithromycin",
+    interactions: ["warfarin","digoxin"],
+    warnings: ["Take on empty stomach","Avoid antacids within 2 hrs"] },
+
+  { keywords: ["ciprofloxacin","levofloxacin","ofloxacin","moxifloxacin","norfloxacin"], generic: "fluoroquinolone",
+    interactions: ["theophylline","aminophylline","warfarin","tizanidine"],
+    warnings: ["Avoid antacids, iron, calcium within 2 hrs of dose","Stay well hydrated","Can prolong QT interval"] },
+
+  { keywords: ["theophylline","aminophylline"], generic: "theophylline", isHigh: true,
+    interactions: ["ciprofloxacin","levofloxacin","clarithromycin","erythromycin","azithromycin","carbamazepine"],
+    warnings: ["Narrow therapeutic index — monitor serum levels","Avoid caffeine","Many drug interactions"] },
+
+  { keywords: ["cyclosporine","tacrolimus"], generic: "cyclosporine", isHigh: true,
+    interactions: ["fluconazole","itraconazole","clarithromycin","erythromycin","amlodipine","nifedipine","felodipine","diltiazem","verapamil","simvastatin","atorvastatin","colchicine","methotrexate"],
+    warnings: ["Narrow therapeutic index","Monitor levels, renal function, and BP regularly"] },
+
+  { keywords: ["simvastatin","atorvastatin","rosuvastatin","pravastatin"], generic: "statin",
+    interactions: ["clarithromycin","erythromycin","itraconazole","fluconazole","amiodarone","amlodipine","cyclosporine","tacrolimus","gemfibrozil","fenofibrate"],
+    warnings: ["Report unexplained muscle pain or weakness immediately","Avoid grapefruit juice"] },
+
+  { keywords: ["sertraline","fluoxetine","paroxetine","escitalopram","citalopram","fluvoxamine"], generic: "ssri",
+    interactions: ["tramadol","metoclopramide","dextromethorphan","codeine","warfarin","lithium","carbamazepine","valproate","amitriptyline","clomipramine","sumatriptan","zolmitriptan"],
+    warnings: ["Serotonin syndrome risk with other serotonergic drugs","Do not stop abruptly — taper gradually"] },
+
+  { keywords: ["tramadol"], generic: "tramadol",
+    interactions: ["sertraline","fluoxetine","paroxetine","escitalopram","citalopram","fluvoxamine","amitriptyline","sumatriptan","zolmitriptan","carbamazepine"],
+    warnings: ["Serotonin syndrome risk with SSRIs/SNRIs","May cause drowsiness — avoid alcohol","Seizure risk at high doses"] },
+
+  { keywords: ["omeprazole","pantoprazole","rabeprazole","esomeprazole","lansoprazole"], generic: "ppi",
+    interactions: ["clopidogrel","methotrexate","warfarin","tacrolimus","rifampicin"],
+    warnings: ["Take 30 min before meal for best effect"] },
+
+  { keywords: ["furosemide","torsemide"], generic: "loop_diuretic",
+    interactions: ["digoxin","lithium","amikacin","gentamicin","ibuprofen","diclofenac","naproxen"],
+    warnings: ["Monitor electrolytes — risk of hypokalemia","Morning dose preferred","Ototoxicity risk with aminoglycosides"] },
+
+  { keywords: ["spironolactone","eplerenone"], generic: "k_sparing_diuretic",
+    interactions: ["enalapril","ramipril","lisinopril","captopril","perindopril","losartan","telmisartan","valsartan","candesartan","irbesartan","olmesartan","ibuprofen","diclofenac"],
+    warnings: ["Risk of dangerous hyperkalemia with ACE inhibitors or ARBs","Monitor potassium levels regularly"] },
+
+  { keywords: ["enalapril","ramipril","lisinopril","captopril","perindopril"], generic: "ace_inhibitor",
+    interactions: ["spironolactone","eplerenone","losartan","telmisartan","valsartan","ibuprofen","diclofenac","aspirin","allopurinol"],
+    warnings: ["Dry cough is a common side effect","Monitor potassium and creatinine","Risk of first-dose hypotension"] },
+
+  { keywords: ["losartan","telmisartan","valsartan","candesartan","irbesartan","olmesartan"], generic: "arb",
+    interactions: ["spironolactone","eplerenone","enalapril","ramipril","lisinopril","ibuprofen","diclofenac"],
+    warnings: ["Monitor potassium and creatinine","Avoid combining with ACE inhibitors (dual blockade)"] },
+
+  { keywords: ["metformin"], generic: "metformin",
+    interactions: [],
+    warnings: ["Take with food to reduce GI side effects","Hold before contrast-based procedures","Lactic acidosis risk in renal impairment"] },
+
+  { keywords: ["glimepiride","glipizide","gliclazide","glibenclamide"], generic: "sulfonylurea",
+    interactions: ["fluconazole","itraconazole","clarithromycin","aspirin","warfarin","atenolol","metoprolol","bisoprolol","propranolol"],
+    warnings: ["Risk of hypoglycemia","Beta-blockers may mask hypoglycemia symptoms","Take with or just before meals"] },
+
+  { keywords: ["insulin"], generic: "insulin",
+    interactions: ["atenolol","metoprolol","bisoprolol","propranolol","carvedilol","prednisolone","dexamethasone","betamethasone","methylprednisolone"],
+    warnings: ["Monitor blood glucose closely","Beta-blockers mask hypoglycemia symptoms","Corticosteroids raise blood glucose"] },
+
+  { keywords: ["levothyroxine"], generic: "levothyroxine",
+    interactions: ["calcium","iron","omeprazole","pantoprazole","rabeprazole"],
+    warnings: ["Take on empty stomach 30 min before breakfast","Separate from calcium, iron, antacids by at least 4 hours"] },
+
+  { keywords: ["prednisolone","dexamethasone","betamethasone","methylprednisolone","hydrocortisone","deflazacort"], generic: "corticosteroid",
+    interactions: ["ibuprofen","diclofenac","aspirin","warfarin","insulin","metformin","glimepiride","glipizide","rifampicin"],
+    warnings: ["Take with food","Do not stop abruptly if on long-term therapy","Raises blood glucose — monitor diabetic patients","Increased infection risk"] },
+
+  { keywords: ["allopurinol","febuxostat"], generic: "uricostatic", isHigh: true,
+    interactions: ["warfarin","azathioprine","ampicillin","amoxicillin","enalapril","ramipril","lisinopril"],
+    warnings: ["Take after food","Stay well hydrated — 2-3L water/day","Allopurinol + azathioprine is a dangerous combination — avoid"] },
+
+  { keywords: ["colchicine"], generic: "colchicine", isHigh: true,
+    interactions: ["clarithromycin","erythromycin","azithromycin","itraconazole","fluconazole","cyclosporine","tacrolimus","simvastatin","atorvastatin"],
+    warnings: ["Do not exceed prescribed dose — serious toxicity risk","Diarrhoea is early sign of toxicity"] },
+
+  { keywords: ["amitriptyline","nortriptyline","imipramine","clomipramine"], generic: "tca",
+    interactions: ["sertraline","fluoxetine","paroxetine","escitalopram","citalopram","tramadol","carbamazepine","valproate","verapamil","diltiazem"],
+    warnings: ["Anticholinergic side effects (dry mouth, constipation, urinary retention)","Cardiac arrhythmia risk","Sedating — avoid driving"] },
+
+  { keywords: ["midazolam","diazepam","lorazepam","clonazepam","alprazolam","nitrazepam","zolpidem"], generic: "benzodiazepine",
+    interactions: ["tramadol","morphine","fentanyl","clarithromycin","erythromycin","itraconazole","fluconazole"],
+    warnings: ["Risk of dependence with long-term use","Sedation potentiated by alcohol and opioids","Do not stop abruptly after prolonged use"] },
+
+  { keywords: ["sildenafil","tadalafil","vardenafil"], generic: "pde5_inhibitor", isHigh: true,
+    interactions: ["nitroglycerin","isosorbide"],
+    warnings: ["ABSOLUTE CONTRAINDICATION with nitrates — risk of fatal hypotension","Do not use within 24 hrs of any nitrate medicine"] },
+
+  { keywords: ["rifampicin"], generic: "rifampicin",
+    interactions: ["warfarin","levothyroxine","digoxin","verapamil","diltiazem","amlodipine","metoprolol","atenolol","bisoprolol","carbamazepine","phenytoin","fluconazole","itraconazole","tacrolimus","cyclosporine","metformin"],
+    warnings: ["Strong enzyme inducer — reduces efficacy of MANY drugs","Turns body fluids orange/red — warn patient"] },
+
+  { keywords: ["isoniazid"], generic: "isoniazid",
+    interactions: ["phenytoin","carbamazepine","valproate"],
+    warnings: ["Take on empty stomach","Give Pyridoxine (Vit B6) to prevent neuropathy","Hepatotoxicity risk — monitor LFTs"] },
+];
+
+function getGenericInfo(medName: string) {
+  const lower = medName.toLowerCase();
+  return GENERIC_MAP.find(g => g.keywords.some(k => lower.includes(k)));
+}
+
+function checkInteractions(medNames: string[]): InteractionWarning[] {
+  const warnings: InteractionWarning[] = [];
+  const valid = medNames.filter(Boolean);
+  for (let i = 0; i < valid.length; i++) {
+    for (let j = i + 1; j < valid.length; j++) {
+      const infoA = getGenericInfo(valid[i]);
+      const infoB = getGenericInfo(valid[j]);
+      if (!infoA || !infoB) continue;
+      // Check if A lists B's keywords OR B lists A's keywords
+      const aHitsB = infoA.interactions.some(k => infoB.keywords.some(bk => bk.includes(k) || k.includes(bk)));
+      const bHitsA = infoB.interactions.some(k => infoA.keywords.some(ak => ak.includes(k) || k.includes(ak)));
+      if (aHitsB || bHitsA) {
+        warnings.push({
+          drug1: valid[i], drug2: valid[j],
+          severity: (infoA.isHigh || infoB.isHigh) ? "high" : "moderate",
+          message: `${valid[i].split(" ")[0]} + ${valid[j].split(" ")[0]}`,
+        });
+      }
+    }
+  }
+  return warnings;
+}
+
+// ★ Per-medicine warning badges — shown inside each medicine card
+function MedWarningBadges({ medName }: { medName: string }) {
+  const info = getGenericInfo(medName);
+  if (!info || !info.warnings.length) return null;
+  return (
+    <div style={{ marginBottom: "8px" }}>
+      {info.warnings.map((w, i) => (
+        <div key={i} style={{
+          display: "flex", alignItems: "flex-start", gap: "6px",
+          padding: "5px 10px", background: "#fffbeb",
+          border: "1px solid #fde68a", borderRadius: "6px",
+          fontSize: "12px", color: "#92400e", fontWeight: "500", marginBottom: "4px",
+        }}>
+          <span style={{ flexShrink: 0 }}>⚠</span><span>{w}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ★ Drug interaction panel — shown above Save button when 2+ medicines entered
+function InteractionPanel({ medNames }: { medNames: string[] }) {
+  const filled = medNames.filter(Boolean);
+  if (filled.length < 2) return null;
+  const warnings = checkInteractions(filled);
+  if (!warnings.length) return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: "8px",
+      padding: "10px 14px", background: "#f0fdf4",
+      border: "1px solid #a7f3d0", borderRadius: "8px",
+      fontSize: "13px", color: "#065f46", fontWeight: "600", marginBottom: "0",
+    }}>
+      <span>✓</span> No known drug interactions detected between the {filled.length} medicines.
+    </div>
+  );
+  const high = warnings.filter(w => w.severity === "high");
+  const moderate = warnings.filter(w => w.severity === "moderate");
+  return (
+    <div style={{ borderRadius: "10px", overflow: "hidden", border: high.length ? "1px solid #fecdd3" : "1px solid #fde68a" }}>
+      {high.length > 0 && <>
+        <div style={{ padding: "8px 14px", background: "#dc2626", color: "#fff", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" as any, letterSpacing: "0.08em" }}>
+          🚨 High Severity Interaction ({high.length})
+        </div>
+        {high.map((w, i) => (
+          <div key={i} style={{ padding: "10px 14px", background: "#fff1f2", borderBottom: "1px solid #fecdd3", fontSize: "12.5px", color: "#9f1239", fontWeight: "600", display: "flex", gap: "8px" }}>
+            <span style={{ flexShrink: 0 }}>🚨</span>
+            <span><strong>{w.message}</strong> — serious interaction. Consider alternative or close monitoring.</span>
+          </div>
+        ))}
+      </>}
+      {moderate.length > 0 && <>
+        <div style={{ padding: "8px 14px", background: "#f59e0b", color: "#fff", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" as any, letterSpacing: "0.08em" }}>
+          ⚡ Moderate Caution ({moderate.length})
+        </div>
+        {moderate.map((w, i) => (
+          <div key={i} style={{ padding: "10px 14px", background: "#fffbeb", borderBottom: i < moderate.length - 1 ? "1px solid #fde68a" : "none", fontSize: "12.5px", color: "#78350f", fontWeight: "600", display: "flex", gap: "8px" }}>
+            <span style={{ flexShrink: 0 }}>⚡</span>
+            <span><strong>{w.message}</strong> — monitor if concurrent use is necessary.</span>
+          </div>
+        ))}
+      </>}
+    </div>
+  );
+}
+// ════════════════════════════════════════════════
+//  END OF DRUG INTERACTION ENGINE
+// ════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════
+//  MEDICINE DATABASE  (1300+ entries) — UNCHANGED
 // ════════════════════════════════════════════════
 const MEDICINE_DB: string[] = [
   // ── Antibiotics - Penicillins ──
@@ -566,13 +836,12 @@ interface Medicine {
   instructions: string;
 }
 
-// ── Autocomplete Component ──
+// ── Autocomplete Component ── (UNCHANGED)
 function MedicineInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [show, setShow] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
   const wrapRef = useRef<HTMLDivElement>(null);
-
   function handleInput(val: string) {
     onChange(val);
     if (val.trim().length < 1) { setSuggestions([]); setShow(false); return; }
@@ -582,13 +851,11 @@ function MedicineInput({ value, onChange }: { value: string; onChange: (v: strin
     setShow(matches.length > 0);
     setActiveIdx(-1);
   }
-
   function select(name: string) {
     onChange(name);
     setSuggestions([]);
     setShow(false);
   }
-
   function onKeyDown(e: React.KeyboardEvent) {
     if (!show) return;
     if (e.key === "ArrowDown") { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, suggestions.length - 1)); }
@@ -596,7 +863,6 @@ function MedicineInput({ value, onChange }: { value: string; onChange: (v: strin
     else if (e.key === "Enter" && activeIdx >= 0) { e.preventDefault(); select(suggestions[activeIdx]); }
     else if (e.key === "Escape") setShow(false);
   }
-
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setShow(false);
@@ -604,8 +870,6 @@ function MedicineInput({ value, onChange }: { value: string; onChange: (v: strin
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
-
-  // Detect type badge
   function getBadge(name: string) {
     const n = name.toLowerCase();
     if (n.includes("injection") || n.includes(" iv") || n.includes(" im")) return { label: "INJ", color: "#7c3aed", bg: "#ede9fe" };
@@ -615,7 +879,6 @@ function MedicineInput({ value, onChange }: { value: string; onChange: (v: strin
     if (n.includes("eye") || n.includes("ear") || n.includes("nasal")) return { label: "LOC", color: "#be185d", bg: "#fce7f3" };
     return { label: "TAB", color: "#0f4c81", bg: "#dbeafe" };
   }
-
   return (
     <div ref={wrapRef} style={{ position: "relative", marginBottom: "10px" }}>
       <input
@@ -691,14 +954,12 @@ function PrescriptionsPageInner() {
   const [pageLoading, setPageLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewPrescription, setViewPrescription] = useState<any | null>(null);
-
   const [form, setForm] = useState({
     patient_id: "",
     medicines: [{ name: "", dosage: "", duration: "", route: "Oral", instructions: "" }] as Medicine[],
     notes: "",
     diagnosis: "",
   });
-
   const searchParams = useSearchParams();
 
   useEffect(() => { loadPrescriptions(); loadPatients(); }, []);
@@ -747,7 +1008,6 @@ function PrescriptionsPageInner() {
     } catch (err) { console.error(err); }
     finally { setPageLoading(false); }
   }
-
   async function loadPatients() {
     try {
       const res = await fetch("/api/patients");
@@ -755,7 +1015,6 @@ function PrescriptionsPageInner() {
       if (result.success && Array.isArray(result.data)) setPatients(result.data);
     } catch (err) { console.error(err); }
   }
-
   function addMedicineRow() {
     setForm(f => ({ ...f, medicines: [...f.medicines, { name: "", dosage: "", duration: "", route: "Oral", instructions: "" }] }));
   }
@@ -765,7 +1024,6 @@ function PrescriptionsPageInner() {
   function updateMedicine(idx: number, field: keyof Medicine, value: string) {
     setForm(f => ({ ...f, medicines: f.medicines.map((m, i) => i === idx ? { ...m, [field]: value } : m) }));
   }
-
   async function savePrescription() {
     if (!form.patient_id) return alert("Please select a patient.");
     if (form.medicines.some(m => !m.name)) return alert("Please fill in all medicine names.");
@@ -784,13 +1042,11 @@ function PrescriptionsPageInner() {
     } catch (err: any) { alert("Failed: " + err.message); }
     finally { setLoading(false); }
   }
-
   async function deletePrescription(id: string) {
     if (!confirm("Delete this prescription?")) return;
     await fetch("/api/prescriptions", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
     loadPrescriptions();
   }
-
   function handlePrint(p: any) {
     const patientName = p.patients?.name || patients.find(pat => pat.id === p.patient_id)?.name || "Patient";
     const w = window.open("", "_blank", "width=800,height=900");
@@ -873,7 +1129,6 @@ function PrescriptionsPageInner() {
     const name = p.patients?.name || patients.find(pat => pat.id === p.patient_id)?.name || "";
     return !searchQuery || name.toLowerCase().includes(searchQuery.toLowerCase()) || p.medicine?.toLowerCase().includes(searchQuery.toLowerCase());
   });
-
   const inputStyle: any = { width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1.5px solid #e2e8f0", fontSize: "13px", boxSizing: "border-box", fontFamily: "inherit" };
 
   return (
@@ -987,7 +1242,6 @@ function PrescriptionsPageInner() {
               <p style={{ color:"#999", fontSize:"13px", marginBottom:"24px" }}>Write a prescription for a patient visit</p>
             </div>
             <div style={{ padding:"0 32px 28px", display:"flex", flexDirection:"column", gap:"18px" }}>
-
               {/* Patient + Diagnosis */}
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px" }}>
                 <div>
@@ -1016,8 +1270,11 @@ function PrescriptionsPageInner() {
                         {form.medicines.length>1 && <button className="remove-row-btn" onClick={()=>removeMedicineRow(idx)}>✕</button>}
                       </div>
 
-                      {/* Autocomplete */}
+                      {/* Autocomplete — UNCHANGED */}
                       <MedicineInput value={med.name} onChange={v=>updateMedicine(idx,"name",v)} />
+
+                      {/* ★ NEW: Per-medicine warnings appear right after autocomplete */}
+                      <MedWarningBadges medName={med.name} />
 
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px", marginBottom:"8px" }}>
                         <div>
@@ -1054,6 +1311,9 @@ function PrescriptionsPageInner() {
                 <textarea style={{ ...inputStyle, minHeight:"70px", resize:"none" }} placeholder="Rest, diet advice, follow-up instructions..." value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} />
               </div>
 
+              {/* ★ NEW: Interaction panel — appears when 2+ medicines are filled */}
+              <InteractionPanel medNames={form.medicines.map(m => m.name)} />
+
               <div style={{ display:"flex", gap:"12px" }}>
                 <button onClick={()=>setShowAdd(false)} style={{ flex:1, padding:"12px", borderRadius:"8px", border:"1px solid #ddd", background:"white", cursor:"pointer", fontSize:"14px", color:"#555" }}>Discard</button>
                 <button onClick={savePrescription} disabled={loading} style={{ flex:2, padding:"12px", borderRadius:"8px", background:loading?"#93c5fd":"#0f4c81", color:"white", border:"none", cursor:loading?"not-allowed":"pointer", fontSize:"14px", fontWeight:"600" }}>
@@ -1065,7 +1325,7 @@ function PrescriptionsPageInner() {
         </div>
       )}
 
-      {/* View Modal */}
+      {/* View Modal — UNCHANGED */}
       {viewPrescription && (
         <div style={{ position:"fixed", inset:0, background:"rgba(10,20,40,0.65)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1100, padding:"20px" }}>
           <div className="modal-anim" style={{ background:"white", borderRadius:"16px", width:"600px", maxHeight:"90vh", overflowY:"auto", padding:"32px", boxShadow:"0 24px 60px rgba(0,0,0,0.3)" }}>
