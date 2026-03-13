@@ -13,6 +13,7 @@ export default function SidebarNav() {
     { name: "OPD Queue",     path: "/opd",           icon: "🏥" },
     { name: "Prescriptions", path: "/prescriptions", icon: "💊" },
     { name: "Billing",       path: "/billing",       icon: "🧾" },
+    { name: "Revenue",       path: "/revenue",       icon: "📈" },
     { name: "Reports",       path: "/reports",       icon: "📊" },
   ];
 
