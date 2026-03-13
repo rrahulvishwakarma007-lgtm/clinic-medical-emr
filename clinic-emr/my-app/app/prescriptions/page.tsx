@@ -9,6 +9,162 @@ const DURATION_PRESETS = ["3 days", "5 days", "7 days", "10 days", "14 days", "1
 const ROUTE_OPTIONS = ["Oral", "Topical", "Inhalation", "Injection", "IV Injection", "IM Injection", "Sublingual", "Nasal Drops", "Nasal Spray", "Eye Drops", "Eye Ointment", "Ear Drops", "Vaginal", "Rectal", "Transdermal Patch"];
 
 // ════════════════════════════════════════════════
+//  ★ LAB TEST ENGINE
+//  Curated catalogue of common tests with categories
+// ════════════════════════════════════════════════
+const LAB_CATEGORIES = [
+  "Haematology", "Biochemistry", "Microbiology", "Serology/Immunology",
+  "Urine & Stool", "Endocrinology", "Cardiology", "Liver Function",
+  "Renal Function", "Lipid Profile", "Coagulation", "Tumour Markers", "Others"
+] as const;
+
+const LAB_TEST_DB: Array<{ name: string; category: typeof LAB_CATEGORIES[number]; code: string }> = [
+  // Haematology
+  { name: "Complete Blood Count (CBC)", category: "Haematology", code: "CBC" },
+  { name: "Haemoglobin (Hb)", category: "Haematology", code: "HB" },
+  { name: "WBC Differential Count", category: "Haematology", code: "WBCDIFF" },
+  { name: "Platelet Count", category: "Haematology", code: "PLT" },
+  { name: "ESR (Erythrocyte Sedimentation Rate)", category: "Haematology", code: "ESR" },
+  { name: "Peripheral Blood Smear", category: "Haematology", code: "PBS" },
+  { name: "Reticulocyte Count", category: "Haematology", code: "RETIC" },
+  // Biochemistry
+  { name: "Random Blood Sugar (RBS)", category: "Biochemistry", code: "RBS" },
+  { name: "Fasting Blood Sugar (FBS)", category: "Biochemistry", code: "FBS" },
+  { name: "Post Prandial Blood Sugar (PPBS)", category: "Biochemistry", code: "PPBS" },
+  { name: "HbA1c (Glycated Haemoglobin)", category: "Biochemistry", code: "HBA1C" },
+  { name: "Serum Electrolytes (Na/K/Cl)", category: "Biochemistry", code: "ELEC" },
+  { name: "Serum Calcium", category: "Biochemistry", code: "CA" },
+  { name: "Serum Phosphorus", category: "Biochemistry", code: "PHOS" },
+  { name: "Serum Magnesium", category: "Biochemistry", code: "MG" },
+  { name: "Uric Acid", category: "Biochemistry", code: "UA" },
+  { name: "Serum Iron Studies", category: "Biochemistry", code: "IRON" },
+  { name: "TIBC (Total Iron Binding Capacity)", category: "Biochemistry", code: "TIBC" },
+  { name: "Serum Ferritin", category: "Biochemistry", code: "FERR" },
+  { name: "Serum Vitamin B12", category: "Biochemistry", code: "B12" },
+  { name: "Serum Vitamin D (25-OH)", category: "Biochemistry", code: "VITD" },
+  { name: "Serum Folate", category: "Biochemistry", code: "FOLATE" },
+  // Liver Function
+  { name: "Liver Function Test (LFT)", category: "Liver Function", code: "LFT" },
+  { name: "SGOT / AST", category: "Liver Function", code: "SGOT" },
+  { name: "SGPT / ALT", category: "Liver Function", code: "SGPT" },
+  { name: "Total Bilirubin", category: "Liver Function", code: "TBIL" },
+  { name: "Direct Bilirubin", category: "Liver Function", code: "DBIL" },
+  { name: "Serum Albumin", category: "Liver Function", code: "ALB" },
+  { name: "Alkaline Phosphatase (ALP)", category: "Liver Function", code: "ALP" },
+  { name: "GGT (Gamma GT)", category: "Liver Function", code: "GGT" },
+  // Renal Function
+  { name: "Renal Function Test (RFT)", category: "Renal Function", code: "RFT" },
+  { name: "Serum Creatinine", category: "Renal Function", code: "CREAT" },
+  { name: "Blood Urea Nitrogen (BUN)", category: "Renal Function", code: "BUN" },
+  { name: "eGFR", category: "Renal Function", code: "EGFR" },
+  // Lipid Profile
+  { name: "Lipid Profile", category: "Lipid Profile", code: "LIPID" },
+  { name: "Total Cholesterol", category: "Lipid Profile", code: "TC" },
+  { name: "HDL Cholesterol", category: "Lipid Profile", code: "HDL" },
+  { name: "LDL Cholesterol", category: "Lipid Profile", code: "LDL" },
+  { name: "Triglycerides", category: "Lipid Profile", code: "TG" },
+  // Coagulation
+  { name: "Prothrombin Time (PT / INR)", category: "Coagulation", code: "PT" },
+  { name: "APTT", category: "Coagulation", code: "APTT" },
+  { name: "D-Dimer", category: "Coagulation", code: "DDIMER" },
+  { name: "Bleeding Time / Clotting Time", category: "Coagulation", code: "BTCT" },
+  // Endocrinology
+  { name: "TSH (Thyroid Stimulating Hormone)", category: "Endocrinology", code: "TSH" },
+  { name: "T3 (Triiodothyronine)", category: "Endocrinology", code: "T3" },
+  { name: "T4 (Thyroxine)", category: "Endocrinology", code: "T4" },
+  { name: "Free T3", category: "Endocrinology", code: "FT3" },
+  { name: "Free T4", category: "Endocrinology", code: "FT4" },
+  { name: "Serum Cortisol (Morning)", category: "Endocrinology", code: "CORT" },
+  { name: "Insulin (Fasting)", category: "Endocrinology", code: "INSF" },
+  { name: "HOMA-IR", category: "Endocrinology", code: "HOMA" },
+  { name: "FSH", category: "Endocrinology", code: "FSH" },
+  { name: "LH", category: "Endocrinology", code: "LH" },
+  { name: "Prolactin", category: "Endocrinology", code: "PRL" },
+  { name: "Testosterone (Total)", category: "Endocrinology", code: "TESTO" },
+  // Cardiology
+  { name: "Troponin I (High Sensitivity)", category: "Cardiology", code: "TROP" },
+  { name: "CK-MB", category: "Cardiology", code: "CKMB" },
+  { name: "BNP / NT-proBNP", category: "Cardiology", code: "BNP" },
+  { name: "LDH", category: "Cardiology", code: "LDH" },
+  { name: "CPK (Total)", category: "Cardiology", code: "CPK" },
+  // Serology / Immunology
+  { name: "CRP (C-Reactive Protein)", category: "Serology/Immunology", code: "CRP" },
+  { name: "RA Factor (Rheumatoid Factor)", category: "Serology/Immunology", code: "RAF" },
+  { name: "ANA (Antinuclear Antibody)", category: "Serology/Immunology", code: "ANA" },
+  { name: "Anti-CCP Antibody", category: "Serology/Immunology", code: "ACCP" },
+  { name: "Widal Test", category: "Serology/Immunology", code: "WIDAL" },
+  { name: "Dengue NS1 Antigen", category: "Serology/Immunology", code: "DENGNS1" },
+  { name: "Dengue IgG / IgM", category: "Serology/Immunology", code: "DENGAB" },
+  { name: "Malaria Antigen Test (RDT)", category: "Serology/Immunology", code: "MAL" },
+  { name: "HBsAg (Hepatitis B Surface Antigen)", category: "Serology/Immunology", code: "HBSAG" },
+  { name: "Anti-HCV", category: "Serology/Immunology", code: "HCV" },
+  { name: "HIV 1 & 2 (ELISA)", category: "Serology/Immunology", code: "HIV" },
+  { name: "VDRL / RPR (Syphilis)", category: "Serology/Immunology", code: "VDRL" },
+  { name: "COVID-19 Antigen", category: "Serology/Immunology", code: "COVID" },
+  { name: "COVID-19 RT-PCR", category: "Serology/Immunology", code: "COVIDPCR" },
+  { name: "H. pylori IgG Antibody", category: "Serology/Immunology", code: "HPYL" },
+  // Urine & Stool
+  { name: "Urine Routine & Microscopy (R/M)", category: "Urine & Stool", code: "URINE" },
+  { name: "Urine Culture & Sensitivity", category: "Urine & Stool", code: "URINECS" },
+  { name: "24hr Urine Protein", category: "Urine & Stool", code: "U24P" },
+  { name: "Urine Microalbumin", category: "Urine & Stool", code: "UMICRO" },
+  { name: "Urine Pregnancy Test (UPT)", category: "Urine & Stool", code: "UPT" },
+  { name: "Stool Routine & Microscopy", category: "Urine & Stool", code: "STOOL" },
+  { name: "Stool Occult Blood (FOB)", category: "Urine & Stool", code: "FOB" },
+  { name: "Stool Culture", category: "Urine & Stool", code: "STOOLCS" },
+  // Microbiology
+  { name: "Blood Culture & Sensitivity", category: "Microbiology", code: "BLOODCS" },
+  { name: "Sputum Culture & Sensitivity", category: "Microbiology", code: "SPUTCS" },
+  { name: "Throat Swab Culture", category: "Microbiology", code: "THROATCS" },
+  { name: "Wound Swab Culture", category: "Microbiology", code: "WOUNDCS" },
+  { name: "KOH Preparation (Fungal)", category: "Microbiology", code: "KOH" },
+  { name: "TB NAAT / GeneXpert", category: "Microbiology", code: "GENEX" },
+  { name: "Mantoux Test (TST)", category: "Microbiology", code: "MANTOUX" },
+  // Tumour Markers
+  { name: "PSA (Prostate Specific Antigen)", category: "Tumour Markers", code: "PSA" },
+  { name: "CA 125 (Ovarian)", category: "Tumour Markers", code: "CA125" },
+  { name: "CA 19-9 (Pancreatic)", category: "Tumour Markers", code: "CA199" },
+  { name: "CEA (Carcinoembryonic Antigen)", category: "Tumour Markers", code: "CEA" },
+  { name: "AFP (Alpha-Fetoprotein)", category: "Tumour Markers", code: "AFP" },
+  { name: "Beta HCG (Quantitative)", category: "Tumour Markers", code: "BHCG" },
+  // Others
+  { name: "Chest X-Ray (PA View)", category: "Others", code: "CXR" },
+  { name: "ECG (12-lead)", category: "Others", code: "ECG" },
+  { name: "2D Echo", category: "Others", code: "ECHO" },
+  { name: "USG Abdomen", category: "Others", code: "USGABD" },
+  { name: "USG Pelvis", category: "Others", code: "USGPELV" },
+  { name: "USG KUB", category: "Others", code: "USGKUB" },
+  { name: "CT Scan Head", category: "Others", code: "CTHEAD" },
+  { name: "MRI Brain", category: "Others", code: "MRIBRAIN" },
+  { name: "Bone Density (DEXA Scan)", category: "Others", code: "DEXA" },
+  { name: "Spirometry / PFT", category: "Others", code: "PFT" },
+];
+
+type LabStatus = "Pending" | "Sample Collected" | "Processing" | "Completed" | "Cancelled";
+
+interface LabTest {
+  id: string;
+  name: string;
+  code: string;
+  category: string;
+  urgency: "Routine" | "Urgent" | "STAT";
+  notes: string;
+}
+
+interface LabOrder {
+  id: string;
+  prescription_id: string;
+  patient_id: string;
+  patient_name: string;
+  tests: LabTest[];
+  status: LabStatus;
+  result_notes: string;
+  ordered_at: string;
+  completed_at?: string;
+  diagnosis: string;
+}
+
+// ════════════════════════════════════════════════
 //  ★ DRUG INTERACTION ENGINE (ADDED)
 //  Maps keywords in medicine names → generic group
 //  Checks all prescribed pairs for known interactions
@@ -946,6 +1102,352 @@ function MedicineInput({ value, onChange }: { value: string; onChange: (v: strin
   );
 }
 
+// ════════════════════════════════════════════════
+//  ★ LAB TEST SELECTOR COMPONENT
+// ════════════════════════════════════════════════
+function LabTestSelector({
+  selected, onChange
+}: { selected: LabTest[]; onChange: (tests: LabTest[]) => void }) {
+  const [searchQ, setSearchQ] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [editingNotes, setEditingNotes] = useState<string | null>(null);
+
+  const filtered = LAB_TEST_DB.filter(t => {
+    const matchCat = activeCategory === "All" || t.category === activeCategory;
+    const matchQ = !searchQ || t.name.toLowerCase().includes(searchQ.toLowerCase()) || t.code.toLowerCase().includes(searchQ.toLowerCase());
+    return matchCat && matchQ;
+  });
+
+  const isSelected = (code: string) => selected.some(s => s.code === code);
+
+  function toggleTest(t: typeof LAB_TEST_DB[0]) {
+    if (isSelected(t.code)) {
+      onChange(selected.filter(s => s.code !== t.code));
+    } else {
+      onChange([...selected, { id: crypto.randomUUID(), name: t.name, code: t.code, category: t.category, urgency: "Routine", notes: "" }]);
+    }
+  }
+
+  function updateUrgency(code: string, urgency: LabTest["urgency"]) {
+    onChange(selected.map(s => s.code === code ? { ...s, urgency } : s));
+  }
+  function updateNotes(code: string, notes: string) {
+    onChange(selected.map(s => s.code === code ? { ...s, notes } : s));
+  }
+
+  const categoryCounts: Record<string, number> = {};
+  LAB_TEST_DB.forEach(t => { categoryCounts[t.category] = (categoryCounts[t.category] || 0) + 1; });
+
+  const urgencyColors: Record<LabTest["urgency"], { bg: string; color: string; border: string }> = {
+    Routine: { bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0" },
+    Urgent:  { bg: "#fffbeb", color: "#b45309", border: "#fde68a" },
+    STAT:    { bg: "#fef2f2", color: "#b91c1c", border: "#fecaca" },
+  };
+
+  return (
+    <div style={{ border: "1.5px solid #e0eaf6", borderRadius: "12px", overflow: "hidden" }}>
+      {/* Header */}
+      <div style={{ background: "linear-gradient(135deg, #0f4c81, #1a6bb5)", padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "18px" }}>🔬</span>
+          <div>
+            <div style={{ color: "white", fontWeight: "700", fontSize: "14px" }}>Lab Test Orders</div>
+            <div style={{ color: "rgba(255,255,255,0.65)", fontSize: "11px" }}>Select tests to attach to this prescription</div>
+          </div>
+        </div>
+        {selected.length > 0 && (
+          <span style={{ background: "rgba(255,255,255,0.2)", color: "white", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "700" }}>
+            {selected.length} selected
+          </span>
+        )}
+      </div>
+
+      {/* Search + Category tabs */}
+      <div style={{ background: "#f8fbff", borderBottom: "1px solid #e8f1fb", padding: "12px 16px" }}>
+        <input
+          type="text" placeholder="🔍 Search tests... (e.g. CBC, TSH, Urine)"
+          value={searchQ} onChange={e => setSearchQ(e.target.value)}
+          style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1.5px solid #d1e3f8", fontSize: "13px", background: "white", marginBottom: "10px", boxSizing: "border-box" as const }}
+        />
+        <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "2px" }}>
+          {["All", ...LAB_CATEGORIES].map(cat => {
+            const active = activeCategory === cat;
+            return (
+              <button key={cat} onClick={() => setActiveCategory(cat)} style={{
+                padding: "4px 11px", borderRadius: "20px", border: "1.5px solid", whiteSpace: "nowrap" as const,
+                fontSize: "11px", fontWeight: "600", cursor: "pointer", fontFamily: "inherit",
+                background: active ? "#0f4c81" : "white",
+                color: active ? "white" : "#555",
+                borderColor: active ? "#0f4c81" : "#dde6f0",
+              }}>{cat}</button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Test Grid */}
+      <div style={{ maxHeight: "240px", overflowY: "auto", padding: "12px 16px", background: "white" }}>
+        {filtered.length === 0 ? (
+          <div style={{ textAlign: "center", color: "#bbb", padding: "24px", fontSize: "13px" }}>No tests found</div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+            {filtered.map(t => {
+              const sel = isSelected(t.code);
+              return (
+                <button key={t.code} onClick={() => toggleTest(t)} style={{
+                  display: "flex", alignItems: "center", gap: "8px", padding: "8px 10px",
+                  borderRadius: "8px", border: "1.5px solid", cursor: "pointer", textAlign: "left" as const,
+                  fontFamily: "inherit", transition: "all 0.12s",
+                  background: sel ? "#ebf4ff" : "#fafbfc",
+                  borderColor: sel ? "#0f4c81" : "#e8edf3",
+                }}>
+                  <span style={{
+                    width: "16px", height: "16px", borderRadius: "4px", flexShrink: 0,
+                    border: `2px solid ${sel ? "#0f4c81" : "#cbd5e0"}`,
+                    background: sel ? "#0f4c81" : "white",
+                    display: "flex", alignItems: "center", justifyContent: "center"
+                  }}>
+                    {sel && <span style={{ color: "white", fontSize: "10px", fontWeight: "900" }}>✓</span>}
+                  </span>
+                  <div style={{ overflow: "hidden" }}>
+                    <div style={{ fontSize: "12px", fontWeight: "600", color: sel ? "#0f4c81" : "#333", whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>{t.name}</div>
+                    <div style={{ fontSize: "10px", color: "#999" }}>{t.code} · {t.category}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Selected tests with urgency + notes */}
+      {selected.length > 0 && (
+        <div style={{ borderTop: "1.5px solid #e8f1fb", padding: "12px 16px", background: "#f8fbff" }}>
+          <div style={{ fontSize: "11px", fontWeight: "700", color: "#0f4c81", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>
+            Selected Tests — Set Urgency
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {selected.map(t => {
+              const uc = urgencyColors[t.urgency];
+              return (
+                <div key={t.code} style={{ background: "white", borderRadius: "8px", border: "1px solid #e8edf3", padding: "8px 12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, minWidth: 0 }}>
+                      <button onClick={() => onChange(selected.filter(s => s.code !== t.code))}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "#e53e3e", fontSize: "14px", padding: "0", flexShrink: 0 }}>✕</button>
+                      <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a1a2e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{t.name}</span>
+                      <span style={{ fontSize: "10px", color: "#999", flexShrink: 0 }}>{t.code}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
+                      {(["Routine", "Urgent", "STAT"] as LabTest["urgency"][]).map(u => (
+                        <button key={u} onClick={() => updateUrgency(t.code, u)} style={{
+                          padding: "3px 8px", borderRadius: "6px", border: "1.5px solid", cursor: "pointer", fontSize: "10px", fontWeight: "700", fontFamily: "inherit",
+                          background: t.urgency === u ? uc.bg : "white",
+                          color: t.urgency === u ? uc.color : "#999",
+                          borderColor: t.urgency === u ? uc.border : "#e2e8f0",
+                        }}>{u}</button>
+                      ))}
+                      <button onClick={() => setEditingNotes(editingNotes === t.code ? null : t.code)}
+                        style={{ padding: "3px 8px", borderRadius: "6px", border: "1.5px solid", cursor: "pointer", fontSize: "10px", fontWeight: "700", fontFamily: "inherit",
+                          background: editingNotes === t.code ? "#f0f7ff" : "white",
+                          color: "#555", borderColor: "#e2e8f0"
+                        }}>📝</button>
+                    </div>
+                  </div>
+                  {editingNotes === t.code && (
+                    <input type="text" placeholder="Special instructions for this test..."
+                      value={t.notes} onChange={e => updateNotes(t.code, e.target.value)}
+                      style={{ marginTop: "6px", width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #d1e3f8", fontSize: "12px", boxSizing: "border-box" as const }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════
+//  ★ LAB ORDERS PANEL — shows all lab orders + result tracking
+// ════════════════════════════════════════════════
+const STATUS_CONFIG: Record<LabStatus, { color: string; bg: string; icon: string }> = {
+  "Pending":          { color: "#92400e", bg: "#fef3c7", icon: "⏳" },
+  "Sample Collected": { color: "#1e40af", bg: "#dbeafe", icon: "🧪" },
+  "Processing":       { color: "#6d28d9", bg: "#ede9fe", icon: "⚙️" },
+  "Completed":        { color: "#065f46", bg: "#d1fae5", icon: "✅" },
+  "Cancelled":        { color: "#991b1b", bg: "#fee2e2", icon: "🚫" },
+};
+
+function LabOrdersPanel({ labOrders, patients, onUpdateStatus, onUpdateResult, onPrintLabReq }: {
+  labOrders: LabOrder[];
+  patients: any[];
+  onUpdateStatus: (id: string, status: LabStatus) => void;
+  onUpdateResult: (id: string, notes: string) => void;
+  onPrintLabReq: (order: LabOrder) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState<LabStatus | "All">("All");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingResult, setEditingResult] = useState<string | null>(null);
+  const [resultDraft, setResultDraft] = useState("");
+
+  const filtered = labOrders.filter(o => {
+    const matchStatus = filterStatus === "All" || o.status === filterStatus;
+    const matchSearch = !search || o.patient_name.toLowerCase().includes(search.toLowerCase()) ||
+      o.tests.some(t => t.name.toLowerCase().includes(search.toLowerCase()));
+    return matchStatus && matchSearch;
+  });
+
+  const counts: Record<string, number> = { All: labOrders.length };
+  labOrders.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
+
+  return (
+    <div style={{ background: "white", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+      {/* Header */}
+      <div style={{ background: "linear-gradient(135deg, #0f4c81, #1a6bb5)", padding: "16px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+          <div style={{ color: "white" }}>
+            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: "18px" }}>🔬 Lab Orders</div>
+            <div style={{ fontSize: "12px", opacity: 0.7, marginTop: "2px" }}>{labOrders.length} total orders</div>
+          </div>
+        </div>
+        {/* Status filter pills */}
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" as const }}>
+          {(["All", "Pending", "Sample Collected", "Processing", "Completed", "Cancelled"] as const).map(s => (
+            <button key={s} onClick={() => setFilterStatus(s as any)} style={{
+              padding: "4px 11px", borderRadius: "20px", border: "1.5px solid", cursor: "pointer",
+              fontSize: "11px", fontWeight: "600", fontFamily: "inherit", whiteSpace: "nowrap" as const,
+              background: filterStatus === s ? "white" : "rgba(255,255,255,0.12)",
+              color: filterStatus === s ? "#0f4c81" : "rgba(255,255,255,0.85)",
+              borderColor: filterStatus === s ? "white" : "rgba(255,255,255,0.2)",
+            }}>{s} {counts[s] ? `(${counts[s]})` : ""}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Search */}
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid #f0f4f8" }}>
+        <input type="text" placeholder="Search patient or test name..."
+          value={search} onChange={e => setSearch(e.target.value)}
+          style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1.5px solid #e2e8f0", fontSize: "13px", boxSizing: "border-box" as const }} />
+      </div>
+
+      {/* Orders list */}
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "50px", color: "#bbb" }}>
+          <div style={{ fontSize: "36px", marginBottom: "10px" }}>🔬</div>
+          <div style={{ fontWeight: "600", color: "#999" }}>No lab orders {filterStatus !== "All" ? `with status "${filterStatus}"` : "found"}</div>
+        </div>
+      ) : (
+        <div>
+          {filtered.map(order => {
+            const sc = STATUS_CONFIG[order.status];
+            const expanded = expandedId === order.id;
+            return (
+              <div key={order.id} style={{ borderBottom: "1px solid #f0f4f8" }}>
+                {/* Order row */}
+                <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}
+                  onClick={() => setExpandedId(expanded ? null : order.id)}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" as const }}>
+                      <span style={{ fontWeight: "700", fontSize: "14px", color: "#1a1a2e" }}>{order.patient_name}</span>
+                      <span style={{ background: sc.bg, color: sc.color, padding: "2px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: "700" }}>
+                        {sc.icon} {order.status}
+                      </span>
+                      {order.tests.some(t => t.urgency === "STAT") && (
+                        <span style={{ background: "#fef2f2", color: "#b91c1c", padding: "2px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "800" }}>🚨 STAT</span>
+                      )}
+                      {order.tests.some(t => t.urgency === "Urgent") && !order.tests.some(t => t.urgency === "STAT") && (
+                        <span style={{ background: "#fffbeb", color: "#b45309", padding: "2px 8px", borderRadius: "12px", fontSize: "10px", fontWeight: "700" }}>⚡ Urgent</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: "12px", color: "#666" }}>
+                      {order.tests.slice(0, 3).map(t => t.code).join(" · ")}
+                      {order.tests.length > 3 && <span style={{ color: "#999" }}> +{order.tests.length - 3} more</span>}
+                      <span style={{ color: "#bbb", marginLeft: "8px" }}>· {order.ordered_at.split("T")[0]}</span>
+                    </div>
+                  </div>
+                  <span style={{ color: "#bbb", fontSize: "12px" }}>{expanded ? "▲" : "▼"}</span>
+                </div>
+
+                {/* Expanded details */}
+                {expanded && (
+                  <div style={{ padding: "0 16px 14px", background: "#f8fbff", borderTop: "1px solid #e8f1fb" }}>
+                    {/* Test list */}
+                    <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
+                      {order.tests.map(t => {
+                        const uc = { Routine: { bg: "#f0fdf4", color: "#15803d" }, Urgent: { bg: "#fffbeb", color: "#b45309" }, STAT: { bg: "#fef2f2", color: "#b91c1c" } }[t.urgency];
+                        return (
+                          <div key={t.code} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 10px", background: "white", borderRadius: "7px", border: "1px solid #e8edf3" }}>
+                            <span style={{ background: uc.bg, color: uc.color, padding: "2px 7px", borderRadius: "6px", fontSize: "10px", fontWeight: "700" }}>{t.urgency}</span>
+                            <span style={{ fontSize: "12px", fontWeight: "600", color: "#1a1a2e" }}>{t.name}</span>
+                            <span style={{ fontSize: "10px", color: "#999", marginLeft: "auto" }}>{t.code}</span>
+                            {t.notes && <span style={{ fontSize: "10px", color: "#666", fontStyle: "italic" }}>· {t.notes}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Status update */}
+                    <div style={{ marginBottom: "10px" }}>
+                      <div style={{ fontSize: "11px", fontWeight: "700", color: "#555", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "6px" }}>Update Status</div>
+                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" as const }}>
+                        {(["Pending", "Sample Collected", "Processing", "Completed", "Cancelled"] as LabStatus[]).map(s => {
+                          const c = STATUS_CONFIG[s];
+                          return (
+                            <button key={s} onClick={() => onUpdateStatus(order.id, s)} style={{
+                              padding: "5px 12px", borderRadius: "7px", border: "1.5px solid", cursor: "pointer", fontSize: "11px", fontWeight: "700", fontFamily: "inherit",
+                              background: order.status === s ? c.bg : "white",
+                              color: order.status === s ? c.color : "#888",
+                              borderColor: order.status === s ? c.color : "#e2e8f0",
+                            }}>{c.icon} {s}</button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Result notes */}
+                    <div style={{ marginBottom: "10px" }}>
+                      <div style={{ fontSize: "11px", fontWeight: "700", color: "#555", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "6px" }}>Result Notes / Observations</div>
+                      {editingResult === order.id ? (
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <textarea value={resultDraft} onChange={e => setResultDraft(e.target.value)}
+                            placeholder="Enter result values, observations, or notes..."
+                            style={{ flex: 1, padding: "8px 10px", borderRadius: "7px", border: "1.5px solid #0f4c81", fontSize: "12px", resize: "none", minHeight: "60px", fontFamily: "inherit" }} />
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <button onClick={() => { onUpdateResult(order.id, resultDraft); setEditingResult(null); }}
+                              style={{ padding: "6px 12px", borderRadius: "7px", border: "none", background: "#0f4c81", color: "white", cursor: "pointer", fontSize: "12px", fontWeight: "700", fontFamily: "inherit" }}>Save</button>
+                            <button onClick={() => setEditingResult(null)}
+                              style={{ padding: "6px 12px", borderRadius: "7px", border: "1px solid #ddd", background: "white", cursor: "pointer", fontSize: "12px", fontFamily: "inherit" }}>Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div onClick={() => { setEditingResult(order.id); setResultDraft(order.result_notes || ""); }}
+                          style={{ padding: "8px 12px", borderRadius: "7px", border: "1.5px dashed #d1e3f8", cursor: "pointer", fontSize: "12px", color: order.result_notes ? "#333" : "#aaa", background: "white", minHeight: "36px" }}>
+                          {order.result_notes || "Click to enter results..."}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button onClick={() => onPrintLabReq(order)} style={{ padding: "7px 14px", borderRadius: "7px", background: "#dbeafe", color: "#1e40af", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "700", fontFamily: "inherit" }}>
+                        🖨 Print Lab Request
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PrescriptionsPageInner() {
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
@@ -954,6 +1456,14 @@ function PrescriptionsPageInner() {
   const [pageLoading, setPageLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewPrescription, setViewPrescription] = useState<any | null>(null);
+  const [activeTab, setActiveTab] = useState<"prescriptions" | "lab-orders">("prescriptions");
+
+  // ★ Lab Orders State
+  const [labOrders, setLabOrders] = useState<LabOrder[]>(() => {
+    try { const raw = localStorage.getItem("clinic_lab_orders"); return raw ? JSON.parse(raw) : []; }
+    catch { return []; }
+  });
+  const [formLabTests, setFormLabTests] = useState<LabTest[]>([]);
   const [form, setForm] = useState({
     patient_id: "",
     medicines: [{ name: "", dosage: "", duration: "", route: "Oral", instructions: "" }] as Medicine[],
@@ -1024,6 +1534,74 @@ function PrescriptionsPageInner() {
   function updateMedicine(idx: number, field: keyof Medicine, value: string) {
     setForm(f => ({ ...f, medicines: f.medicines.map((m, i) => i === idx ? { ...m, [field]: value } : m) }));
   }
+  // ★ Save lab orders to localStorage
+  function persistLabOrders(orders: LabOrder[]) {
+    setLabOrders(orders);
+    try { localStorage.setItem("clinic_lab_orders", JSON.stringify(orders)); } catch {}
+  }
+
+  function updateLabStatus(id: string, status: LabStatus) {
+    const updated = labOrders.map(o => o.id === id ? { ...o, status, completed_at: status === "Completed" ? new Date().toISOString() : o.completed_at } : o);
+    persistLabOrders(updated);
+  }
+  function updateLabResult(id: string, notes: string) {
+    persistLabOrders(labOrders.map(o => o.id === id ? { ...o, result_notes: notes } : o));
+  }
+
+  function handlePrintLabReq(order: LabOrder) {
+    const w = window.open("", "_blank", "width=800,height=700");
+    if (!w) return;
+    const statTests = order.tests.filter(t => t.urgency === "STAT");
+    const urgentTests = order.tests.filter(t => t.urgency === "Urgent");
+    const routineTests = order.tests.filter(t => t.urgency === "Routine");
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Lab Request - ${order.patient_name}</title>
+    <style>
+      body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:24px;color:#1a1a2e;font-size:13px}
+      .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0f4c81;padding-bottom:14px;margin-bottom:18px}
+      .hosp-name{font-size:20px;font-weight:800;color:#0f4c81}
+      .hosp-sub{font-size:11px;color:#666;margin-top:3px}
+      .lab-title{font-size:16px;font-weight:700;color:#b91c1c;border:2px solid #b91c1c;padding:4px 14px;border-radius:6px}
+      .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f8fbff;padding:14px;border-radius:8px;margin-bottom:16px;border:1px solid #d1e3f8}
+      .info-item label{font-size:10px;color:#888;font-weight:700;text-transform:uppercase;display:block;margin-bottom:2px}
+      .info-item span{font-size:14px;font-weight:600;color:#1a1a2e}
+      .section-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;padding:5px 10px;border-radius:5px}
+      .stat-section .section-title{background:#fef2f2;color:#b91c1c}
+      .urgent-section .section-title{background:#fffbeb;color:#b45309}
+      .routine-section .section-title{background:#f0fdf4;color:#15803d}
+      .test-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;margin-bottom:4px;border:1px solid #e8edf3}
+      .checkbox{width:14px;height:14px;border:2px solid #aaa;border-radius:3px;display:inline-block;margin-right:4px}
+      .test-name{font-weight:600;font-size:13px}
+      .test-code{font-size:10px;color:#999;margin-left:auto}
+      .test-notes{font-size:11px;color:#666;font-style:italic}
+      .footer{margin-top:24px;padding-top:12px;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#999}
+      .sign-box{border-top:1px solid #333;width:180px;text-align:center;padding-top:6px;font-size:11px;color:#555}
+      @media print{body{padding:12px}}
+    </style></head><body>
+    <div class="header">
+      <div>
+        <div class="hosp-name">${hospitalConfig.name}</div>
+        <div class="hosp-sub">${hospitalConfig.address}, ${hospitalConfig.city} · ${hospitalConfig.phone}</div>
+      </div>
+      <div class="lab-title">🔬 LAB REQUEST FORM</div>
+    </div>
+    <div class="info-grid">
+      <div class="info-item"><label>Patient Name</label><span>${order.patient_name}</span></div>
+      <div class="info-item"><label>Order Date</label><span>${order.ordered_at.split("T")[0]}</span></div>
+      <div class="info-item"><label>Ordered By</label><span>${hospitalConfig.doctorName}</span></div>
+      <div class="info-item"><label>Diagnosis / Indication</label><span>${order.diagnosis || "—"}</span></div>
+    </div>
+    ${statTests.length ? `<div class="stat-section" style="margin-bottom:14px"><div class="section-title">🚨 STAT — Process Immediately</div>${statTests.map(t=>`<div class="test-row"><span class="checkbox"></span><span class="test-name">${t.name}</span><span class="test-code">${t.code}</span>${t.notes?`<span class="test-notes">${t.notes}</span>`:""}</div>`).join("")}</div>` : ""}
+    ${urgentTests.length ? `<div class="urgent-section" style="margin-bottom:14px"><div class="section-title">⚡ URGENT</div>${urgentTests.map(t=>`<div class="test-row"><span class="checkbox"></span><span class="test-name">${t.name}</span><span class="test-code">${t.code}</span>${t.notes?`<span class="test-notes">${t.notes}</span>`:""}</div>`).join("")}</div>` : ""}
+    ${routineTests.length ? `<div class="routine-section" style="margin-bottom:14px"><div class="section-title">✓ ROUTINE</div>${routineTests.map(t=>`<div class="test-row"><span class="checkbox"></span><span class="test-name">${t.name}</span><span class="test-code">${t.code}</span>${t.notes?`<span class="test-notes">${t.notes}</span>`:""}</div>`).join("")}</div>` : ""}
+    <div class="footer">
+      <div>Lab Order ID: LAB-${order.id.slice(0,8).toUpperCase()}</div>
+      <div class="sign-box">${hospitalConfig.doctorName}<br/>${hospitalConfig.doctorDegree}</div>
+    </div>
+    <script>window.onload=()=>{window.print();}<\/script>
+    </body></html>`);
+    w.document.close();
+  }
+
   async function savePrescription() {
     if (!form.patient_id) return alert("Please select a patient.");
     if (form.medicines.some(m => !m.name)) return alert("Please fill in all medicine names.");
@@ -1036,8 +1614,27 @@ function PrescriptionsPageInner() {
       });
       const result = await res.json();
       if (result.error) throw new Error(result.error);
+
+      // ★ If lab tests selected, create a lab order
+      if (formLabTests.length > 0) {
+        const patientName = patients.find(p => p.id === form.patient_id)?.name || "Unknown";
+        const newOrder: LabOrder = {
+          id: crypto.randomUUID(),
+          prescription_id: result.data?.id || result.id || "manual",
+          patient_id: form.patient_id,
+          patient_name: patientName,
+          tests: formLabTests,
+          status: "Pending",
+          result_notes: "",
+          ordered_at: new Date().toISOString(),
+          diagnosis: form.diagnosis,
+        };
+        persistLabOrders([newOrder, ...labOrders]);
+      }
+
       setShowAdd(false);
       setForm({ patient_id: "", medicines: [{ name: "", dosage: "", duration: "", route: "Oral", instructions: "" }], notes: "", diagnosis: "" });
+      setFormLabTests([]);
       loadPrescriptions();
     } catch (err: any) { alert("Failed: " + err.message); }
     finally { setLoading(false); }
@@ -1153,23 +1750,46 @@ function PrescriptionsPageInner() {
       `}</style>
 
       {/* Header */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"24px" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
         <div>
-          <h1 style={{ fontFamily:"'DM Serif Display',serif", fontSize:"26px", color:"#0f4c81", margin:0 }}>Prescriptions</h1>
-          <p style={{ color:"#888", fontSize:"14px", marginTop:"4px" }}>{hospitalConfig.name} &bull; {prescriptions.length} records</p>
+          <h1 style={{ fontFamily:"'DM Serif Display',serif", fontSize:"26px", color:"#0f4c81", margin:0 }}>Prescriptions & Lab Orders</h1>
+          <p style={{ color:"#888", fontSize:"14px", marginTop:"4px" }}>{hospitalConfig.name} &bull; {prescriptions.length} prescriptions · {labOrders.length} lab orders</p>
         </div>
         <button onClick={() => setShowAdd(true)} style={{ background:"#0f4c81", color:"white", border:"none", padding:"11px 22px", borderRadius:"10px", cursor:"pointer", fontWeight:"600", fontSize:"14px", boxShadow:"0 4px 14px rgba(15,76,129,0.25)" }}>
           + New Prescription
         </button>
       </div>
 
+      {/* Tabs */}
+      <div style={{ display:"flex", gap:"4px", marginBottom:"20px", background:"white", padding:"4px", borderRadius:"11px", width:"fit-content", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+        {([
+          { key: "prescriptions", label: "💊 Prescriptions", count: prescriptions.length },
+          { key: "lab-orders", label: "🔬 Lab Orders", count: labOrders.length },
+        ] as const).map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
+            padding:"8px 20px", borderRadius:"8px", border:"none", cursor:"pointer", fontFamily:"inherit",
+            fontSize:"13px", fontWeight:"600", transition:"all 0.15s",
+            background: activeTab === tab.key ? "#0f4c81" : "transparent",
+            color: activeTab === tab.key ? "white" : "#888",
+            boxShadow: activeTab === tab.key ? "0 2px 8px rgba(15,76,129,0.25)" : "none",
+          }}>
+            {tab.label}
+            <span style={{ marginLeft:"6px", background: activeTab===tab.key?"rgba(255,255,255,0.2)":"#f0f4f8", color: activeTab===tab.key?"white":"#555", padding:"1px 7px", borderRadius:"10px", fontSize:"11px", fontWeight:"700" }}>{tab.count}</span>
+          </button>
+        ))}
+      </div>
+
       {/* Stats */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"14px", marginBottom:"22px" }}>
-        {[
+        {(activeTab === "prescriptions" ? [
           { label:"Total Prescriptions", value:prescriptions.length, color:"#0f4c81", icon:"💊" },
           { label:"Unique Patients", value:new Set(prescriptions.map(p=>p.patient_id)).size, color:"#065f46", icon:"👥" },
           { label:"Today's Rx", value:prescriptions.filter(p=>(p.created_at||"").split("T")[0]===new Date().toISOString().split("T")[0]).length, color:"#6d28d9", icon:"📋" },
-        ].map(s => (
+        ] : [
+          { label:"Total Lab Orders", value:labOrders.length, color:"#0f4c81", icon:"🔬" },
+          { label:"Pending / In-Progress", value:labOrders.filter(o=>o.status==="Pending"||o.status==="Sample Collected"||o.status==="Processing").length, color:"#b45309", icon:"⏳" },
+          { label:"Completed Today", value:labOrders.filter(o=>o.status==="Completed"&&(o.completed_at||"").split("T")[0]===new Date().toISOString().split("T")[0]).length, color:"#065f46", icon:"✅" },
+        ]).map(s => (
           <div key={s.label} className="stat-card">
             <div style={{ fontSize:"20px", marginBottom:"6px" }}>{s.icon}</div>
             <div style={{ fontSize:"11px", color:"#999", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"4px" }}>{s.label}</div>
@@ -1178,14 +1798,25 @@ function PrescriptionsPageInner() {
         ))}
       </div>
 
-      {/* Search */}
-      <div style={{ marginBottom:"16px" }}>
+      {/* Search (prescriptions tab only) */}
+      {activeTab === "prescriptions" && <div style={{ marginBottom:"16px" }}>
         <input type="text" placeholder="Search by patient name or medicine..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}
           style={{ padding:"10px 16px", borderRadius:"9px", border:"1.5px solid #e2e8f0", fontSize:"14px", width:"300px", background:"white" }} />
-      </div>
+      </div>}
 
-      {/* Table */}
-      <div style={{ background:"white", borderRadius:"14px", overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+      {/* Lab Orders Tab */}
+      {activeTab === "lab-orders" && (
+        <LabOrdersPanel
+          labOrders={labOrders}
+          patients={patients}
+          onUpdateStatus={updateLabStatus}
+          onUpdateResult={updateLabResult}
+          onPrintLabReq={handlePrintLabReq}
+        />
+      )}
+
+      {/* Prescriptions Table */}
+      {activeTab === "prescriptions" && <div style={{ background:"white", borderRadius:"14px", overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
         <table style={{ width:"100%", borderCollapse:"collapse" }}>
           <thead>
             <tr style={{ background:"#0f4c81" }}>
@@ -1231,7 +1862,7 @@ function PrescriptionsPageInner() {
             })}
           </tbody>
         </table>
-      </div>
+      </div>}
 
       {/* New Prescription Modal */}
       {showAdd && (
@@ -1311,11 +1942,14 @@ function PrescriptionsPageInner() {
                 <textarea style={{ ...inputStyle, minHeight:"70px", resize:"none" }} placeholder="Rest, diet advice, follow-up instructions..." value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} />
               </div>
 
+              {/* ★ NEW: Lab Test Orders */}
+              <LabTestSelector selected={formLabTests} onChange={setFormLabTests} />
+
               {/* ★ NEW: Interaction panel — appears when 2+ medicines are filled */}
               <InteractionPanel medNames={form.medicines.map(m => m.name)} />
 
               <div style={{ display:"flex", gap:"12px" }}>
-                <button onClick={()=>setShowAdd(false)} style={{ flex:1, padding:"12px", borderRadius:"8px", border:"1px solid #ddd", background:"white", cursor:"pointer", fontSize:"14px", color:"#555" }}>Discard</button>
+                <button onClick={()=>{ setShowAdd(false); setFormLabTests([]); }} style={{ flex:1, padding:"12px", borderRadius:"8px", border:"1px solid #ddd", background:"white", cursor:"pointer", fontSize:"14px", color:"#555" }}>Discard</button>
                 <button onClick={savePrescription} disabled={loading} style={{ flex:2, padding:"12px", borderRadius:"8px", background:loading?"#93c5fd":"#0f4c81", color:"white", border:"none", cursor:loading?"not-allowed":"pointer", fontSize:"14px", fontWeight:"600" }}>
                   {loading?"Saving...":"Save & Issue Prescription"}
                 </button>
@@ -1373,6 +2007,39 @@ function PrescriptionsPageInner() {
                 <div style={{ fontSize:"14px", color:"#444", padding:"12px", background:"#fffbeb", borderRadius:"8px", borderLeft:"3px solid #f59e0b" }}>{viewPrescription.notes}</div>
               </div>
             )}
+
+            {/* ★ Linked Lab Orders */}
+            {(() => {
+              const linked = labOrders.filter(o => o.prescription_id === viewPrescription.id || o.patient_id === viewPrescription.patient_id);
+              if (!linked.length) return null;
+              return (
+                <div style={{ marginBottom:"24px" }}>
+                  <div style={{ fontSize:"11px", color:"#0f4c81", fontWeight:"700", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px", paddingBottom:"6px", borderBottom:"1px solid #e8f1fb" }}>🔬 Lab Orders for this Patient</div>
+                  {linked.map(order => {
+                    const sc = STATUS_CONFIG[order.status];
+                    return (
+                      <div key={order.id} style={{ background:"#f8fbff", borderRadius:"8px", padding:"10px 14px", marginBottom:"8px", border:"1px solid #e0eaf6" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"6px", flexWrap:"wrap" }}>
+                          <span style={{ background:sc.bg, color:sc.color, padding:"2px 10px", borderRadius:"12px", fontSize:"11px", fontWeight:"700" }}>{sc.icon} {order.status}</span>
+                          <span style={{ fontSize:"11px", color:"#999" }}>{order.ordered_at.split("T")[0]}</span>
+                        </div>
+                        <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
+                          {order.tests.map(t => (
+                            <span key={t.code} style={{ background:"white", border:"1px solid #d1e3f8", color:"#1e40af", padding:"2px 8px", borderRadius:"6px", fontSize:"11px", fontWeight:"600" }}>{t.code}</span>
+                          ))}
+                        </div>
+                        {order.result_notes && (
+                          <div style={{ marginTop:"6px", fontSize:"12px", color:"#444", padding:"6px 10px", background:"#f0fdf4", borderRadius:"6px", borderLeft:"2px solid #16a34a" }}>
+                            📋 {order.result_notes}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
             <div style={{ display:"flex", gap:"12px" }}>
               <button onClick={()=>setViewPrescription(null)} style={{ flex:1, padding:"12px", borderRadius:"10px", border:"1px solid #ddd", background:"white", cursor:"pointer", fontWeight:"600" }}>Close</button>
               <button onClick={()=>handlePrint(viewPrescription)} style={{ flex:1, padding:"12px", borderRadius:"10px", border:"none", background:"#0f4c81", color:"white", cursor:"pointer", fontWeight:"600" }}>Print Prescription</button>
