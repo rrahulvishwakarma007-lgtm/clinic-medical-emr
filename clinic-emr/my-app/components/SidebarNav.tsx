@@ -11,6 +11,7 @@ export default function SidebarNav() {
     { name: "Patients",      path: "/patients",      icon: "👥" },
     { name: "Appointments",  path: "/appointments",  icon: "📅" },
     { name: "OPD Queue",     path: "/opd",           icon: "🏥" },
+    { name: "Follow-ups",    path: "/followup",      icon: "🔔" },
     { name: "Prescriptions", path: "/prescriptions", icon: "💊" },
     { name: "Billing",       path: "/billing",       icon: "🧾" },
     { name: "Revenue",       path: "/revenue",       icon: "📈" },
