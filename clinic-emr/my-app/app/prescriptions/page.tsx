@@ -1448,6 +1448,59 @@ function LabOrdersPanel({ labOrders, patients, onUpdateStatus, onUpdateResult, o
   );
 }
 
+// ════════════════════════════════════════════════
+//  ★ FOLLOW-UP SUGGESTION ENGINE
+//  Same rules as followup-page.tsx — reused here
+//  so doctor gets a suggestion right in the Rx form
+// ════════════════════════════════════════════════
+const FU_RULES: Array<{ keywords: string[]; days: number; reason: string; priority: "High"|"Medium"|"Low" }> = [
+  { keywords: ["hypertension","bp","blood pressure","i10"], days: 30, reason: "BP monitoring & medication review", priority: "High" },
+  { keywords: ["diabetes","diabetic","hba1c","sugar","e11","e13"], days: 30, reason: "Blood sugar monitoring & medication adjustment", priority: "High" },
+  { keywords: ["thyroid","hypothyroid","hyperthyroid","tsh"], days: 45, reason: "TSH level recheck & dose titration", priority: "High" },
+  { keywords: ["fever","viral","ari","urti","j06"], days: 5, reason: "Recovery assessment", priority: "Low" },
+  { keywords: ["infection","antibiotic","j18","pneumonia","j22"], days: 7, reason: "Post-antibiotic review", priority: "Medium" },
+  { keywords: ["asthma","copd","wheeze","j45","j44"], days: 14, reason: "Respiratory review & inhaler technique", priority: "High" },
+  { keywords: ["anemia","iron","haemoglobin","hb low","d50","d64"], days: 30, reason: "Haemoglobin recheck", priority: "Medium" },
+  { keywords: ["cardiac","heart","angina","i20","i25","echo"], days: 14, reason: "Cardiac assessment & ECG review", priority: "High" },
+  { keywords: ["kidney","renal","ckd","n18","creatinine"], days: 14, reason: "Renal function recheck", priority: "High" },
+  { keywords: ["liver","hepatitis","jaundice","k70","k72","sgpt"], days: 14, reason: "Liver function review", priority: "High" },
+  { keywords: ["depression","anxiety","mental","f32","f41"], days: 14, reason: "Psychiatric follow-up & medication review", priority: "High" },
+  { keywords: ["migraine","headache","g43"], days: 10, reason: "Headache diary review & medication efficacy", priority: "Medium" },
+  { keywords: ["allergy","urticaria","l50","l20"], days: 10, reason: "Allergy response review", priority: "Low" },
+  { keywords: ["cholesterol","lipid","dyslipidemia","e78"], days: 45, reason: "Lipid profile recheck", priority: "Medium" },
+  { keywords: ["uti","n30","urinary","cystitis"], days: 7, reason: "Post-treatment culture recheck", priority: "Medium" },
+  { keywords: ["pregnancy","antenatal","z34"], days: 14, reason: "Antenatal checkup", priority: "High" },
+];
+
+function getFUSuggestion(diagnosis: string, medDurations: string[]): { days: number; reason: string; priority: "High"|"Medium"|"Low"; date: string } | null {
+  if (!diagnosis.trim()) return null;
+  const lower = diagnosis.toLowerCase();
+  for (const rule of FU_RULES) {
+    if (rule.keywords.some(kw => lower.includes(kw))) {
+      const date = new Date(); date.setDate(date.getDate() + rule.days);
+      return { ...rule, date: date.toISOString().split("T")[0] };
+    }
+  }
+  // Fallback: use longest medicine duration
+  const ddays = medDurations.map(dur => {
+    const m = dur.toLowerCase().match(/(\d+)\s*(day|week|month)/);
+    if (!m) return 0;
+    const n = parseInt(m[1]);
+    return m[2].startsWith("week") ? n*7 : m[2].startsWith("month") ? n*30 : n;
+  });
+  const maxDur = Math.max(...ddays, 0);
+  if (maxDur > 0) {
+    const date = new Date(); date.setDate(date.getDate() + maxDur + 2);
+    return { days: maxDur+2, reason: "Post-medication review", priority: "Medium", date: date.toISOString().split("T")[0] };
+  }
+  return null;
+}
+
+function fDateShort(d: string) {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" });
+}
+
 function PrescriptionsPageInner() {
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
@@ -1464,6 +1517,12 @@ function PrescriptionsPageInner() {
     catch { return []; }
   });
   const [formLabTests, setFormLabTests] = useState<LabTest[]>([]);
+
+  // ★ Follow-up suggestion state
+  const [fuSuggestion, setFuSuggestion] = useState<{ days: number; reason: string; priority: "High"|"Medium"|"Low"; date: string } | null>(null);
+  const [fuEnabled, setFuEnabled] = useState(false);
+  const [fuDate, setFuDate] = useState("");
+  const [fuReason, setFuReason] = useState("");
   const [form, setForm] = useState({
     patient_id: "",
     medicines: [{ name: "", dosage: "", duration: "", route: "Oral", instructions: "" }] as Medicine[],
@@ -1508,6 +1567,21 @@ function PrescriptionsPageInner() {
       window.history.replaceState({}, "", "/prescriptions");
     } catch (e) { console.error("Voice pre-fill error", e); }
   }, [patients, searchParams]);
+
+  // ★ Auto-suggest follow-up when diagnosis or medicine durations change
+  useEffect(() => {
+    const medDurs = form.medicines.map(m => m.duration).filter(Boolean);
+    const suggestion = getFUSuggestion(form.diagnosis, medDurs);
+    setFuSuggestion(suggestion);
+    if (suggestion && !fuEnabled) {
+      // Auto-enable and pre-fill if high priority
+      if (suggestion.priority === "High") {
+        setFuEnabled(true);
+        setFuDate(suggestion.date);
+        setFuReason(suggestion.reason);
+      }
+    }
+  }, [form.diagnosis, form.medicines]);
 
   async function loadPrescriptions() {
     setPageLoading(true);
@@ -1632,9 +1706,37 @@ function PrescriptionsPageInner() {
         persistLabOrders([newOrder, ...labOrders]);
       }
 
+      // ★ Auto-create follow-up if enabled
+      if (fuEnabled && fuDate) {
+        const patientName = patients.find(p => p.id === form.patient_id)?.name || "Unknown";
+        const patientPhone = patients.find(p => p.id === form.patient_id)?.phone || "";
+        const newFU = {
+          id: `FU-${Date.now()}`,
+          patientId: form.patient_id,
+          patientName,
+          patientPhone,
+          doctor: hospitalConfig.doctorName,
+          dueDate: fuDate,
+          createdDate: new Date().toISOString().split("T")[0],
+          diagnosis: form.diagnosis,
+          reason: fuReason || "Follow-up after prescription",
+          prescriptionId: result.data?.id || result.id || "manual",
+          status: "Pending" as const,
+          priority: fuSuggestion?.priority || "Medium" as const,
+          notes: "",
+          reminderSent: false,
+          suggestedBy: "auto" as const,
+        };
+        try {
+          const existing = JSON.parse(localStorage.getItem("clinic_followups") || "[]");
+          localStorage.setItem("clinic_followups", JSON.stringify([newFU, ...existing]));
+        } catch {}
+      }
+
       setShowAdd(false);
       setForm({ patient_id: "", medicines: [{ name: "", dosage: "", duration: "", route: "Oral", instructions: "" }], notes: "", diagnosis: "" });
       setFormLabTests([]);
+      setFuEnabled(false); setFuDate(""); setFuReason(""); setFuSuggestion(null);
       loadPrescriptions();
     } catch (err: any) { alert("Failed: " + err.message); }
     finally { setLoading(false); }
@@ -1948,8 +2050,72 @@ function PrescriptionsPageInner() {
               {/* ★ NEW: Interaction panel — appears when 2+ medicines are filled */}
               <InteractionPanel medNames={form.medicines.map(m => m.name)} />
 
+              {/* ★ FOLLOW-UP SUGGESTION BLOCK */}
+              {fuSuggestion && (
+                <div style={{ border: `2px solid ${fuEnabled ? "#0f4c81" : "#e2e8f0"}`, borderRadius: "12px", overflow: "hidden", transition: "border-color 0.2s" }}>
+                  {/* Header row */}
+                  <div style={{ background: fuEnabled ? "linear-gradient(135deg, #0f4c81, #1a6bb5)" : "#f8fbff", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontSize: "16px" }}>🔔</span>
+                      <div>
+                        <div style={{ fontSize: "13px", fontWeight: "700", color: fuEnabled ? "white" : "#0f4c81" }}>Smart Follow-up</div>
+                        <div style={{ fontSize: "11px", color: fuEnabled ? "rgba(255,255,255,0.7)" : "#888" }}>
+                          {fuSuggestion.priority === "High" ? "Auto-scheduled · High priority" : `Suggested in ${fuSuggestion.days} days`}
+                        </div>
+                      </div>
+                    </div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "7px", cursor: "pointer" }}>
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: fuEnabled ? "white" : "#888" }}>{fuEnabled ? "ON" : "OFF"}</span>
+                      <div onClick={() => {
+                        const next = !fuEnabled;
+                        setFuEnabled(next);
+                        if (next && fuSuggestion) { setFuDate(fuSuggestion.date); setFuReason(fuSuggestion.reason); }
+                      }} style={{
+                        width: "38px", height: "20px", borderRadius: "10px", cursor: "pointer",
+                        background: fuEnabled ? "#22c55e" : "#cbd5e0", position: "relative", transition: "background 0.2s",
+                      }}>
+                        <div style={{ position: "absolute", top: "2px", left: fuEnabled ? "20px" : "2px", width: "16px", height: "16px", borderRadius: "50%", background: "white", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Suggestion chip — always visible */}
+                  {!fuEnabled && (
+                    <div style={{ padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+                      <div style={{ fontSize: "12px", color: "#555" }}>
+                        <span style={{ background: fuSuggestion.priority === "High" ? "#fef2f2" : fuSuggestion.priority === "Medium" ? "#fffbeb" : "#f0fdf4", color: fuSuggestion.priority === "High" ? "#b91c1c" : fuSuggestion.priority === "Medium" ? "#b45309" : "#15803d", padding: "2px 8px", borderRadius: "6px", fontSize: "10px", fontWeight: "800", marginRight: "8px" }}>{fuSuggestion.priority}</span>
+                        {fuSuggestion.reason} · <strong>{fDateShort(fuSuggestion.date)}</strong>
+                      </div>
+                      <button onClick={() => { setFuEnabled(true); setFuDate(fuSuggestion.date); setFuReason(fuSuggestion.reason); }}
+                        style={{ background: "#0f4c81", color: "white", border: "none", padding: "5px 14px", borderRadius: "7px", cursor: "pointer", fontSize: "11px", fontWeight: "700", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+                        Enable →
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Editable fields when enabled */}
+                  {fuEnabled && (
+                    <div style={{ padding: "14px 16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                      <div>
+                        <div style={{ fontSize: "11px", fontWeight: "700", color: "#555", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "5px" }}>Follow-up Date</div>
+                        <input type="date" value={fuDate} onChange={e => setFuDate(e.target.value)}
+                          style={{ padding: "8px 10px", borderRadius: "7px", border: "1.5px solid #d1e3f8", fontSize: "13px", fontFamily: "inherit", width: "100%", boxSizing: "border-box" as const }} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "11px", fontWeight: "700", color: "#555", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "5px" }}>Reason</div>
+                        <input value={fuReason} onChange={e => setFuReason(e.target.value)} placeholder="Reason for follow-up..."
+                          style={{ padding: "8px 10px", borderRadius: "7px", border: "1.5px solid #d1e3f8", fontSize: "13px", fontFamily: "inherit", width: "100%", boxSizing: "border-box" as const }} />
+                      </div>
+                      <div style={{ gridColumn: "1 / -1", fontSize: "11px", color: "#16a34a", fontWeight: "600" }}>
+                        ✓ Follow-up will be auto-created in the Follow-up Scheduler when prescription is saved
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div style={{ display:"flex", gap:"12px" }}>
-                <button onClick={()=>{ setShowAdd(false); setFormLabTests([]); }} style={{ flex:1, padding:"12px", borderRadius:"8px", border:"1px solid #ddd", background:"white", cursor:"pointer", fontSize:"14px", color:"#555" }}>Discard</button>
+                <button onClick={()=>{ setShowAdd(false); setFormLabTests([]); setFuEnabled(false); setFuDate(""); setFuReason(""); setFuSuggestion(null); }} style={{ flex:1, padding:"12px", borderRadius:"8px", border:"1px solid #ddd", background:"white", cursor:"pointer", fontSize:"14px", color:"#555" }}>Discard</button>
                 <button onClick={savePrescription} disabled={loading} style={{ flex:2, padding:"12px", borderRadius:"8px", background:loading?"#93c5fd":"#0f4c81", color:"white", border:"none", cursor:loading?"not-allowed":"pointer", fontSize:"14px", fontWeight:"600" }}>
                   {loading?"Saving...":"Save & Issue Prescription"}
                 </button>
