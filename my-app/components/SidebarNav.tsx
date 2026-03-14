@@ -7,12 +7,16 @@ export default function SidebarNav() {
   const pathname = usePathname();
 
   const navItems = [
-    { name: "Dashboard",     path: "/",             icon: "🏠" },
-    { name: "Patients",      path: "/patients",     icon: "👥" },
-    { name: "Appointments",  path: "/appointments", icon: "📅" },
-    { name: "Prescriptions", path: "/prescriptions",icon: "💊" },
-    { name: "Billing",       path: "/billing",      icon: "🧾" },
-    { name: "Reports",       path: "/reports",      icon: "📊" },
+    { name: "Dashboard",     path: "/",              icon: "🏠" },
+    { name: "Patients",      path: "/patients",      icon: "👥" },
+    { name: "Vitals",        path: "/vitals",        icon: "🩺" },
+    { name: "Appointments",  path: "/appointments",  icon: "📅" },
+    { name: "OPD Queue",     path: "/opd",           icon: "🏥" },
+    { name: "Follow-ups",    path: "/followup",      icon: "🔔" },
+    { name: "Prescriptions", path: "/prescriptions", icon: "💊" },
+    { name: "Billing",       path: "/billing",       icon: "🧾" },
+    { name: "Revenue",       path: "/revenue",       icon: "📈" },
+    { name: "Reports",       path: "/reports",       icon: "📊" },
   ];
 
   const isActive = (path: string) => {
@@ -98,21 +102,11 @@ export default function SidebarNav() {
       <button
         onClick={handleLogout}
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          width: "100%",
-          padding: "10px 12px",
-          background: "transparent",
-          color: "#fc8181",
-          border: "1px solid rgba(252,129,129,0.15)",
-          borderRadius: "9px",
-          fontSize: "14px",
-          fontWeight: "500",
-          cursor: "pointer",
-          transition: "all 0.15s",
-          fontFamily: "inherit",
-          textAlign: "left",
+          display: "flex", alignItems: "center", gap: "10px", width: "100%",
+          padding: "10px 12px", background: "transparent", color: "#fc8181",
+          border: "1px solid rgba(252,129,129,0.15)", borderRadius: "9px",
+          fontSize: "14px", fontWeight: "500", cursor: "pointer",
+          transition: "all 0.15s", fontFamily: "inherit", textAlign: "left",
         }}
         onMouseEnter={e => {
           (e.currentTarget as HTMLElement).style.background = "rgba(254,178,178,0.1)";
