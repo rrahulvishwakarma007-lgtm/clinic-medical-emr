@@ -367,6 +367,359 @@ function checkInteractions(medNames: string[]): InteractionWarning[] {
   return warnings;
 }
 
+}
+
+// ════════════════════════════════════════════════════════
+//  ★ CLINICAL DECISION SUPPORT (CDS) ENGINE
+//  1. Dose Calculator — weight/age-based dosing
+//  2. Red Flag Alerts — dangerous diagnosis+medicine combos
+//  3. Allergy Checker — patient allergy vs medicine cross-check
+//  4. Renal/Hepatic Caution — flag medicines needing dose adjustment
+//  5. Paediatric Safety — flag adult-only medicines
+// ════════════════════════════════════════════════════════
+
+// ── Dose Database ──────────────────────────────────────
+// Each entry: usual adult dose, paediatric dose formula, max dose
+const DOSE_DB: Array<{
+  keywords: string[];
+  name: string;
+  adultDose: string;
+  paedDose?: string;       // mg/kg/day or fixed
+  paedFormula?: (wt: number, age: number) => string;
+  maxDose?: string;
+  renalCaution?: boolean;
+  hepaticCaution?: boolean;
+  adultOnly?: boolean;
+  minAge?: number;         // minimum age in years
+}> = [
+  { keywords: ["paracetamol","acetaminophen","crocin","dolo","calpol","p-500"],
+    name: "Paracetamol", adultDose: "500–1000 mg every 4–6 hrs",
+    paedFormula: (wt) => `${Math.round(wt * 15)}–${Math.round(wt * 20)} mg every 4–6 hrs (15–20 mg/kg/dose)`,
+    maxDose: "4000 mg/day adults · 75 mg/kg/day paeds", hepaticCaution: true },
+
+  { keywords: ["ibuprofen","brufen","combiflam"],
+    name: "Ibuprofen", adultDose: "200–400 mg every 6–8 hrs",
+    paedFormula: (wt, age) => age < 6 ? "Not recommended under 6 months" : `${Math.round(wt * 5)}–${Math.round(wt * 10)} mg every 6–8 hrs (5–10 mg/kg/dose)`,
+    maxDose: "2400 mg/day adults · 40 mg/kg/day paeds", renalCaution: true, hepaticCaution: true, minAge: 0.5 },
+
+  { keywords: ["amoxicillin","amoxil","mox","novamox"],
+    name: "Amoxicillin", adultDose: "250–500 mg every 8 hrs",
+    paedFormula: (wt) => `${Math.round(wt * 25)}–${Math.round(wt * 45)} mg/day in 3 divided doses (25–45 mg/kg/day)`,
+    maxDose: "3000 mg/day", renalCaution: true },
+
+  { keywords: ["azithromycin","azee","zithromax","z-pack"],
+    name: "Azithromycin", adultDose: "500 mg once daily × 3 days",
+    paedFormula: (wt) => `${Math.round(wt * 10)} mg once daily × 3 days (10 mg/kg/day)`,
+    maxDose: "500 mg/day adults · 500 mg/day paeds", hepaticCaution: true },
+
+  { keywords: ["cetirizine","zyrtec","cetrizine"],
+    name: "Cetirizine", adultDose: "10 mg once daily",
+    paedFormula: (wt, age) => age < 2 ? "Not recommended under 2 years" : age < 6 ? "2.5 mg twice daily" : "5 mg twice daily or 10 mg once daily",
+    maxDose: "10 mg/day", renalCaution: true },
+
+  { keywords: ["metformin","glycomet","glucophage"],
+    name: "Metformin", adultDose: "500–1000 mg twice daily with meals",
+    maxDose: "2000–2550 mg/day", renalCaution: true, adultOnly: true, minAge: 10 },
+
+  { keywords: ["amlodipine","amlip","amlong","norvasc"],
+    name: "Amlodipine", adultDose: "5–10 mg once daily",
+    maxDose: "10 mg/day", hepaticCaution: true, adultOnly: true },
+
+  { keywords: ["atorvastatin","atorva","lipitor","atorlip"],
+    name: "Atorvastatin", adultDose: "10–80 mg once daily at night",
+    maxDose: "80 mg/day", hepaticCaution: true, adultOnly: true },
+
+  { keywords: ["omeprazole","omez","prilosec"],
+    name: "Omeprazole", adultDose: "20–40 mg once daily before food",
+    paedFormula: (wt) => wt < 10 ? "5 mg once daily" : wt < 20 ? "10 mg once daily" : "20 mg once daily",
+    maxDose: "40 mg/day", hepaticCaution: true },
+
+  { keywords: ["pantoprazole","pan","pantop","protonix"],
+    name: "Pantoprazole", adultDose: "40 mg once daily before food",
+    maxDose: "80 mg/day", hepaticCaution: true },
+
+  { keywords: ["ciprofloxacin","ciplox","cifran"],
+    name: "Ciprofloxacin", adultDose: "250–500 mg twice daily",
+    paedFormula: (wt) => `${Math.round(wt * 10)}–${Math.round(wt * 20)} mg/day in 2 divided doses`,
+    maxDose: "1500 mg/day", renalCaution: true },
+
+  { keywords: ["doxycycline","doxy","doxt"],
+    name: "Doxycycline", adultDose: "100 mg twice daily day 1, then 100 mg once daily",
+    maxDose: "200 mg/day", adultOnly: true, minAge: 8 },
+
+  { keywords: ["prednisolone","wysolone","deltacortril"],
+    name: "Prednisolone", adultDose: "5–60 mg/day (varies by indication)",
+    paedFormula: (wt) => `${Math.round(wt * 1)}–${Math.round(wt * 2)} mg/kg/day (1–2 mg/kg/day, max 40 mg)`,
+    maxDose: "Varies — taper as per protocol" },
+
+  { keywords: ["salbutamol","ventolin","asthalin","albuterol"],
+    name: "Salbutamol inhaler", adultDose: "100–200 mcg (1–2 puffs) every 4–6 hrs PRN",
+    paedFormula: () => "100 mcg (1 puff) every 4–6 hrs PRN (same for children >4 yrs with spacer)",
+    maxDose: "800 mcg/day" },
+
+  { keywords: ["amoxiclav","augmentin","clavam","co-amoxiclav"],
+    name: "Amoxicillin-Clavulanate", adultDose: "625 mg every 8 hrs or 1 g every 12 hrs",
+    paedFormula: (wt) => `${Math.round(wt * 25)}–${Math.round(wt * 45)} mg/kg/day amoxicillin component in 2–3 divided doses`,
+    maxDose: "3000 mg amoxicillin/day", renalCaution: true },
+
+  { keywords: ["metronidazole","flagyl","metrogyl"],
+    name: "Metronidazole", adultDose: "400 mg every 8 hrs",
+    paedFormula: (wt) => `${Math.round(wt * 7.5)} mg every 8 hrs (7.5 mg/kg/dose)`,
+    maxDose: "2400 mg/day", hepaticCaution: true },
+
+  { keywords: ["ranitidine","rantac","zantac"],
+    name: "Ranitidine", adultDose: "150 mg twice daily or 300 mg at bedtime",
+    paedFormula: (wt) => `${Math.round(wt * 2)}–${Math.round(wt * 4)} mg/day in 2 divided doses`,
+    maxDose: "300 mg/day", renalCaution: true },
+
+  { keywords: ["folic acid","folate","folvite"],
+    name: "Folic Acid", adultDose: "5 mg once daily (therapeutic) · 400 mcg/day (prophylactic)",
+    paedFormula: () => "5 mg once daily", maxDose: "5 mg/day therapeutic" },
+
+  { keywords: ["iron","ferrous","ferium","livogen","fersolate"],
+    name: "Ferrous Sulphate / Iron", adultDose: "200 mg (65 mg elemental iron) twice daily",
+    paedFormula: (wt) => `${Math.round(wt * 3)}–${Math.round(wt * 6)} mg/kg/day elemental iron in 2–3 divided doses` },
+
+  { keywords: ["calcium","calcirol","shelcal","calcitas"],
+    name: "Calcium + Vitamin D", adultDose: "500–1000 mg elemental calcium twice daily",
+    paedFormula: (wt, age) => age < 1 ? "200–260 mg/day" : age < 4 ? "700 mg/day" : age < 9 ? "1000 mg/day" : "1300 mg/day" },
+];
+
+// ── Red Flag Rules ─────────────────────────────────────
+const RED_FLAG_RULES: Array<{
+  id: string;
+  diagnosisKeywords: string[];
+  medicineKeywords: string[];
+  flag: string;
+  severity: "danger" | "warning";
+  advice: string;
+}> = [
+  { id: "rf1", diagnosisKeywords: ["renal","kidney","ckd","n18","creatinine high","renal failure"],
+    medicineKeywords: ["metformin","glycomet"],
+    flag: "Metformin contraindicated in renal impairment",
+    severity: "danger", advice: "Risk of lactic acidosis. Contraindicated if eGFR <30. Consider alternative: Glipizide, DPP-4 inhibitors." },
+
+  { id: "rf2", diagnosisKeywords: ["liver","hepatic","cirrhosis","hepatitis","jaundice","k70","k72"],
+    medicineKeywords: ["paracetamol","acetaminophen","crocin","dolo"],
+    flag: "Paracetamol — caution in hepatic disease",
+    severity: "warning", advice: "Reduce dose to max 2g/day. Avoid in severe hepatic impairment." },
+
+  { id: "rf3", diagnosisKeywords: ["peptic ulcer","gastric ulcer","gerd","gi bleed","k25","k26"],
+    medicineKeywords: ["ibuprofen","diclofenac","naproxen","aspirin","etoricoxib","aceclofenac","mefenamic","piroxicam"],
+    flag: "NSAID contraindicated in peptic ulcer / GI bleed",
+    severity: "danger", advice: "NSAIDs worsen ulcers and can cause fatal GI bleeding. Use Paracetamol instead. If NSAID must be used, add PPI cover." },
+
+  { id: "rf4", diagnosisKeywords: ["asthma","j45","wheeze","bronchospasm"],
+    medicineKeywords: ["ibuprofen","aspirin","naproxen","diclofenac","aceclofenac"],
+    flag: "Aspirin/NSAIDs may trigger bronchospasm in asthma",
+    severity: "warning", advice: "Aspirin-exacerbated respiratory disease affects ~10% asthmatics. Use Paracetamol for pain/fever." },
+
+  { id: "rf5", diagnosisKeywords: ["pregnancy","pregnant","antenatal","z34"],
+    medicineKeywords: ["ibuprofen","diclofenac","naproxen","etoricoxib","aspirin","doxycycline","methotrexate","warfarin","atorvastatin","simvastatin","rosuvastatin"],
+    flag: "Potentially teratogenic medicine in pregnancy",
+    severity: "danger", advice: "This medicine is contraindicated or restricted in pregnancy. Verify safety before prescribing. Consult obstetric guidelines." },
+
+  { id: "rf6", diagnosisKeywords: ["heart failure","cardiac failure","i50","chf"],
+    medicineKeywords: ["ibuprofen","diclofenac","naproxen","etoricoxib","celecoxib","aceclofenac"],
+    flag: "NSAIDs worsen heart failure",
+    severity: "danger", advice: "NSAIDs cause sodium retention, fluid overload, and can precipitate acute decompensation. Avoid in heart failure." },
+
+  { id: "rf7", diagnosisKeywords: ["hypertension","bp","i10"],
+    medicineKeywords: ["pseudoephedrine","phenylephrine","decongestant","oxymetazoline"],
+    flag: "Decongestants raise blood pressure",
+    severity: "warning", advice: "Sympathomimetic decongestants can significantly elevate BP. Avoid in uncontrolled hypertension. Use saline nasal spray instead." },
+
+  { id: "rf8", diagnosisKeywords: ["epilepsy","seizure","g40","g41"],
+    medicineKeywords: ["ciprofloxacin","levofloxacin","moxifloxacin","metronidazole","tramadol"],
+    flag: "This medicine may lower seizure threshold",
+    severity: "warning", advice: "Fluoroquinolones and metronidazole can lower the seizure threshold. Use with caution and inform patient." },
+
+  { id: "rf9", diagnosisKeywords: ["diabetes","diabetic","e11"],
+    medicineKeywords: ["prednisolone","dexamethasone","betamethasone","methylprednisolone","hydrocortisone"],
+    flag: "Corticosteroids cause hyperglycaemia in diabetics",
+    severity: "warning", advice: "Steroids raise blood glucose significantly. Monitor glucose closely and adjust antidiabetic therapy if needed." },
+
+  { id: "rf10", diagnosisKeywords: ["g6pd","g6pd deficiency","favism"],
+    medicineKeywords: ["ciprofloxacin","nitrofurantoin","dapsone","primaquine","cotrimoxazole","rasburicase"],
+    flag: "G6PD deficiency — haemolysis risk",
+    severity: "danger", advice: "This medicine can trigger acute haemolytic anaemia in G6PD-deficient patients. Choose a safe alternative." },
+
+  { id: "rf11", diagnosisKeywords: ["child","paediatric","infant","toddler","neonatal"],
+    medicineKeywords: ["doxycycline","tetracycline","aspirin","codeine","tramadol"],
+    flag: "This medicine is unsafe / restricted in children",
+    severity: "danger", advice: "Doxycycline contraindicated <8 years (tooth staining). Aspirin avoided <16 years (Reye syndrome risk). Codeine/tramadol restricted <12 years." },
+
+  { id: "rf12", diagnosisKeywords: ["elderly","geriatric","old age","age >65","frail"],
+    medicineKeywords: ["diazepam","alprazolam","clonazepam","lorazepam","nitrazepam"],
+    flag: "Benzodiazepines — fall risk in elderly",
+    severity: "warning", advice: "Beers Criteria: benzodiazepines significantly increase fall and fracture risk in elderly. Consider non-pharmacological sleep hygiene or shorter-acting alternatives." },
+
+  { id: "rf13", diagnosisKeywords: ["uti","urinary","cystitis","n30"],
+    medicineKeywords: ["nitrofurantoin"],
+    flag: "Nitrofurantoin — check renal function",
+    severity: "warning", advice: "Nitrofurantoin ineffective and potentially toxic if eGFR <30 ml/min. Verify renal function before prescribing." },
+];
+
+// ── Allergy cross-check ────────────────────────────────
+const ALLERGY_MAP: Array<{ allergen: string; cross: string[] }> = [
+  { allergen: "penicillin", cross: ["amoxicillin","amoxiclav","ampicillin","piperacillin","cloxacillin","dicloxacillin","flucloxacillin","co-amoxiclav","augmentin","clavam","mox","novamox"] },
+  { allergen: "sulfa", cross: ["cotrimoxazole","co-trimoxazole","trimethoprim","sulfamethoxazole","bactrim","septra"] },
+  { allergen: "nsaid", cross: ["ibuprofen","diclofenac","naproxen","etoricoxib","celecoxib","aceclofenac","mefenamic","piroxicam","ketorolac","indomethacin","meloxicam","nimesulide"] },
+  { allergen: "aspirin", cross: ["ibuprofen","diclofenac","naproxen","nsaid","etoricoxib","celecoxib","aceclofenac"] },
+  { allergen: "quinolone", cross: ["ciprofloxacin","levofloxacin","moxifloxacin","ofloxacin","norfloxacin","gatifloxacin","ciplox","cifran"] },
+  { allergen: "cephalosporin", cross: ["cefalexin","cefixime","cefuroxime","ceftriaxone","cefpodoxime","cefdinir","cefa"] },
+  { allergen: "macrolide", cross: ["azithromycin","clarithromycin","erythromycin","roxithromycin","azee","zithromax"] },
+  { allergen: "metronidazole", cross: ["metrogyl","flagyl","tinidazole","ornidazole","secnidazole"] },
+  { allergen: "codeine", cross: ["tramadol","morphine","oxycodone","fentanyl","hydrocodone","buprenorphine"] },
+];
+
+function checkAllergyConflict(allergyText: string, medNames: string[]): Array<{ med: string; allergen: string }> {
+  if (!allergyText || allergyText.toLowerCase() === "none" || allergyText.toLowerCase() === "nil") return [];
+  const allergyLower = allergyText.toLowerCase();
+  const conflicts: Array<{ med: string; allergen: string }> = [];
+  medNames.filter(Boolean).forEach(med => {
+    const medLower = med.toLowerCase();
+    ALLERGY_MAP.forEach(({ allergen, cross }) => {
+      if (allergyLower.includes(allergen)) {
+        if (cross.some(c => medLower.includes(c)) || medLower.includes(allergen)) {
+          conflicts.push({ med, allergen });
+        }
+      }
+    });
+    // Direct match
+    if (allergyLower.includes(medLower.split(" ")[0])) {
+      if (!conflicts.find(c => c.med === med)) conflicts.push({ med, allergen: medLower.split(" ")[0] });
+    }
+  });
+  return conflicts;
+}
+
+function checkRedFlags(diagnosis: string, medNames: string[]): typeof RED_FLAG_RULES {
+  if (!diagnosis || !medNames.filter(Boolean).length) return [];
+  const diagLower = diagnosis.toLowerCase();
+  const triggered: typeof RED_FLAG_RULES = [];
+  RED_FLAG_RULES.forEach(rule => {
+    const diagMatch = rule.diagnosisKeywords.some(kw => diagLower.includes(kw));
+    const medMatch = medNames.filter(Boolean).some(med =>
+      rule.medicineKeywords.some(kw => med.toLowerCase().includes(kw))
+    );
+    if (diagMatch && medMatch) triggered.push(rule);
+  });
+  return triggered;
+}
+
+function getDoseInfo(medName: string) {
+  if (!medName) return null;
+  const lower = medName.toLowerCase();
+  return DOSE_DB.find(d => d.keywords.some(kw => lower.includes(kw))) || null;
+}
+
+// ── Dose Calculator Component ──────────────────────────
+function DoseCalculator({ medName }: { medName: string }) {
+  const [weight, setWeight] = useState("");
+  const [age, setAge] = useState("");
+  const [expanded, setExpanded] = useState(false);
+  const info = getDoseInfo(medName);
+  if (!info) return null;
+  const wt = parseFloat(weight);
+  const ag = parseFloat(age);
+  const isChild = ag > 0 && ag < 18;
+  const calcDose = isChild && info.paedFormula && wt > 0 ? info.paedFormula(wt, ag) : null;
+
+  return (
+    <div style={{ marginTop: "6px" }}>
+      <button onClick={() => setExpanded(!expanded)}
+        style={{ background: "none", border: "none", cursor: "pointer", color: "#0f4c81", fontSize: "11px", fontWeight: "700", padding: "3px 0", fontFamily: "inherit", display: "flex", alignItems: "center", gap: "4px" }}>
+        🧮 {expanded ? "Hide" : "Dose Calculator"}
+      </button>
+      {expanded && (
+        <div style={{ background: "#f0f7ff", borderRadius: "8px", padding: "10px 12px", border: "1px solid #bfdbfe", marginTop: "4px" }}>
+          <div style={{ fontSize: "11px", fontWeight: "700", color: "#0f4c81", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.8px" }}>{info.name}</div>
+          <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "10px", color: "#888", marginBottom: "3px", fontWeight: "600" }}>Weight (kg)</div>
+              <input type="number" placeholder="e.g. 70" value={weight} onChange={e => setWeight(e.target.value)}
+                style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #bfdbfe", fontSize: "12px", fontFamily: "inherit", boxSizing: "border-box" as const }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "10px", color: "#888", marginBottom: "3px", fontWeight: "600" }}>Age (years)</div>
+              <input type="number" placeholder="e.g. 8" value={age} onChange={e => setAge(e.target.value)}
+                style={{ width: "100%", padding: "5px 8px", borderRadius: "6px", border: "1px solid #bfdbfe", fontSize: "12px", fontFamily: "inherit", boxSizing: "border-box" as const }} />
+            </div>
+          </div>
+          {/* Result */}
+          <div style={{ background: "white", borderRadius: "7px", padding: "8px 10px", border: "1px solid #e8f1fb" }}>
+            {calcDose ? (
+              <>
+                <div style={{ fontSize: "11px", color: "#888", fontWeight: "600", marginBottom: "2px" }}>PAEDIATRIC DOSE</div>
+                <div style={{ fontSize: "13px", fontWeight: "700", color: "#0f4c81" }}>{calcDose}</div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: "11px", color: "#888", fontWeight: "600", marginBottom: "2px" }}>USUAL ADULT DOSE</div>
+                <div style={{ fontSize: "13px", fontWeight: "700", color: "#0f4c81" }}>{info.adultDose}</div>
+              </>
+            )}
+            {info.maxDose && <div style={{ fontSize: "11px", color: "#b45309", marginTop: "4px", fontWeight: "600" }}>Max: {info.maxDose}</div>}
+            {info.renalCaution && <div style={{ fontSize: "10px", color: "#7c3aed", marginTop: "3px" }}>⚠ Dose adjustment needed in renal impairment</div>}
+            {info.hepaticCaution && <div style={{ fontSize: "10px", color: "#b45309", marginTop: "3px" }}>⚠ Caution in hepatic impairment</div>}
+            {info.adultOnly && ag > 0 && ag < (info.minAge || 18) && (
+              <div style={{ fontSize: "10px", color: "#b91c1c", marginTop: "3px", fontWeight: "700" }}>🚫 Not recommended under {info.minAge || 18} years</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── CDS Panel — shown above Save button ───────────────
+function CDSPanel({ diagnosis, medNames, patientAllergies }: {
+  diagnosis: string;
+  medNames: string[];
+  patientAllergies: string;
+}) {
+  const redFlags = checkRedFlags(diagnosis, medNames);
+  const allergyConflicts = checkAllergyConflict(patientAllergies, medNames);
+  if (!redFlags.length && !allergyConflicts.length) return null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {/* Allergy conflicts — always danger */}
+      {allergyConflicts.map((c, i) => (
+        <div key={`allergy-${i}`} style={{ background: "#fef2f2", border: "2px solid #fca5a5", borderRadius: "10px", padding: "12px 14px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+            <span style={{ fontSize: "18px", flexShrink: 0 }}>🚨</span>
+            <div>
+              <div style={{ fontWeight: "800", color: "#b91c1c", fontSize: "13px", marginBottom: "3px" }}>
+                ALLERGY ALERT — {c.med}
+              </div>
+              <div style={{ fontSize: "12px", color: "#7f1d1d" }}>
+                Patient has documented <strong>{c.allergen}</strong> allergy. <strong>{c.med}</strong> may cause a serious allergic reaction.
+              </div>
+              <div style={{ fontSize: "11px", color: "#991b1b", marginTop: "4px", fontWeight: "600" }}>Remove this medicine or confirm the allergy is not applicable before proceeding.</div>
+            </div>
+          </div>
+        </div>
+      ))}
+      {/* Red flag alerts */}
+      {redFlags.map(rf => (
+        <div key={rf.id} style={{ background: rf.severity === "danger" ? "#fef2f2" : "#fffbeb", border: `1.5px solid ${rf.severity === "danger" ? "#fca5a5" : "#fde68a"}`, borderRadius: "10px", padding: "12px 14px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+            <span style={{ fontSize: "16px", flexShrink: 0 }}>{rf.severity === "danger" ? "🚫" : "⚠️"}</span>
+            <div>
+              <div style={{ fontWeight: "800", color: rf.severity === "danger" ? "#b91c1c" : "#92400e", fontSize: "13px", marginBottom: "3px" }}>
+                {rf.flag}
+              </div>
+              <div style={{ fontSize: "12px", color: rf.severity === "danger" ? "#7f1d1d" : "#78350f" }}>{rf.advice}</div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ★ Per-medicine warning badges — shown inside each medicine card
 function MedWarningBadges({ medName }: { medName: string }) {
   const info = getGenericInfo(medName);
@@ -1523,6 +1876,11 @@ function PrescriptionsPageInner() {
   const [fuEnabled, setFuEnabled] = useState(false);
   const [fuDate, setFuDate] = useState("");
   const [fuReason, setFuReason] = useState("");
+
+  // ★ CDS — patient vitals for dose calculation & allergy check
+  const [cdsWeight, setCdsWeight] = useState("");
+  const [cdsAge, setCdsAge] = useState("");
+  const [cdsAllergies, setCdsAllergies] = useState("");
   const [form, setForm] = useState({
     patient_id: "",
     medicines: [{ name: "", dosage: "", duration: "", route: "Oral", instructions: "" }] as Medicine[],
@@ -1737,6 +2095,7 @@ function PrescriptionsPageInner() {
       setForm({ patient_id: "", medicines: [{ name: "", dosage: "", duration: "", route: "Oral", instructions: "" }], notes: "", diagnosis: "" });
       setFormLabTests([]);
       setFuEnabled(false); setFuDate(""); setFuReason(""); setFuSuggestion(null);
+      setCdsWeight(""); setCdsAge(""); setCdsAllergies("");
       loadPrescriptions();
     } catch (err: any) { alert("Failed: " + err.message); }
     finally { setLoading(false); }
@@ -1979,7 +2338,20 @@ function PrescriptionsPageInner() {
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px" }}>
                 <div>
                   <label style={{ fontSize:"12px", fontWeight:"600", color:"#555", textTransform:"uppercase", letterSpacing:"1px", display:"block", marginBottom:"6px" }}>Patient *</label>
-                  <select style={inputStyle} value={form.patient_id} onChange={e=>setForm(f=>({...f,patient_id:e.target.value}))}>
+                  <select style={inputStyle} value={form.patient_id} onChange={e => {
+                    setForm(f=>({...f,patient_id:e.target.value}));
+                    const pat = patients.find((p:any) => p.id === e.target.value);
+                    if (pat) {
+                      if (pat.allergies && pat.allergies !== "None") setCdsAllergies(pat.allergies);
+                      if (pat.age) setCdsAge(String(pat.age));
+                      if (pat.weight || pat.wt) setCdsWeight(String(pat.weight || pat.wt));
+                      // Calculate age from DOB if available
+                      if (pat.dob) {
+                        const ageFull = Math.floor((Date.now() - new Date(pat.dob).getTime()) / (365.25 * 86400000));
+                        if (ageFull > 0) setCdsAge(String(ageFull));
+                      }
+                    }
+                  }}>
                     <option value="">Select patient...</option>
                     {patients.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
@@ -1987,6 +2359,30 @@ function PrescriptionsPageInner() {
                 <div>
                   <label style={{ fontSize:"12px", fontWeight:"600", color:"#555", textTransform:"uppercase", letterSpacing:"1px", display:"block", marginBottom:"6px" }}>Diagnosis / Chief Complaint</label>
                   <input style={inputStyle} placeholder="e.g. Fever, Cold, Infection..." value={form.diagnosis} onChange={e=>setForm(f=>({...f,diagnosis:e.target.value}))} />
+                </div>
+              </div>
+
+              {/* ★ CDS — Patient Info Strip (weight, age, allergies) */}
+              <div style={{ background:"#f8fbff", borderRadius:"10px", padding:"12px 14px", border:"1.5px solid #e8f1fb" }}>
+                <div style={{ fontSize:"11px", fontWeight:"800", color:"#0f4c81", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px", display:"flex", alignItems:"center", gap:"6px" }}>
+                  <span>🩺</span> Patient Info <span style={{ fontSize:"10px", color:"#aaa", fontWeight:"500", textTransform:"none", letterSpacing:"0" }}>— used for dose calculator & safety checks</span>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 2fr", gap:"10px" }}>
+                  <div>
+                    <div style={{ fontSize:"11px", color:"#888", fontWeight:"600", marginBottom:"4px" }}>Weight (kg)</div>
+                    <input type="number" placeholder="e.g. 70" value={cdsWeight} onChange={e=>setCdsWeight(e.target.value)}
+                      style={{ ...inputStyle, padding:"7px 10px" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize:"11px", color:"#888", fontWeight:"600", marginBottom:"4px" }}>Age (years)</div>
+                    <input type="number" placeholder="e.g. 35" value={cdsAge} onChange={e=>setCdsAge(e.target.value)}
+                      style={{ ...inputStyle, padding:"7px 10px" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize:"11px", color:"#888", fontWeight:"600", marginBottom:"4px" }}>Known Allergies</div>
+                    <input placeholder="e.g. Penicillin, Sulfa drugs..." value={cdsAllergies} onChange={e=>setCdsAllergies(e.target.value)}
+                      style={{ ...inputStyle, padding:"7px 10px" }} />
+                  </div>
                 </div>
               </div>
 
@@ -2006,8 +2402,11 @@ function PrescriptionsPageInner() {
                       {/* Autocomplete — UNCHANGED */}
                       <MedicineInput value={med.name} onChange={v=>updateMedicine(idx,"name",v)} />
 
-                      {/* ★ NEW: Per-medicine warnings appear right after autocomplete */}
+                      {/* ★ Per-medicine warnings appear right after autocomplete */}
                       <MedWarningBadges medName={med.name} />
+
+                      {/* ★ Dose Calculator — expands inline per medicine */}
+                      <DoseCalculator medName={med.name} />
 
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px", marginBottom:"8px" }}>
                         <div>
@@ -2047,7 +2446,14 @@ function PrescriptionsPageInner() {
               {/* ★ NEW: Lab Test Orders */}
               <LabTestSelector selected={formLabTests} onChange={setFormLabTests} />
 
-              {/* ★ NEW: Interaction panel — appears when 2+ medicines are filled */}
+              {/* ★ CDS PANEL — Red flags + Allergy alerts */}
+              <CDSPanel
+                diagnosis={form.diagnosis}
+                medNames={form.medicines.map(m => m.name)}
+                patientAllergies={cdsAllergies}
+              />
+
+              {/* ★ Interaction panel — appears when 2+ medicines are filled */}
               <InteractionPanel medNames={form.medicines.map(m => m.name)} />
 
               {/* ★ FOLLOW-UP SUGGESTION BLOCK */}
@@ -2115,7 +2521,7 @@ function PrescriptionsPageInner() {
               )}
 
               <div style={{ display:"flex", gap:"12px" }}>
-                <button onClick={()=>{ setShowAdd(false); setFormLabTests([]); setFuEnabled(false); setFuDate(""); setFuReason(""); setFuSuggestion(null); }} style={{ flex:1, padding:"12px", borderRadius:"8px", border:"1px solid #ddd", background:"white", cursor:"pointer", fontSize:"14px", color:"#555" }}>Discard</button>
+                <button onClick={()=>{ setShowAdd(false); setFormLabTests([]); setFuEnabled(false); setFuDate(""); setFuReason(""); setFuSuggestion(null); setCdsWeight(""); setCdsAge(""); setCdsAllergies(""); }} style={{ flex:1, padding:"12px", borderRadius:"8px", border:"1px solid #ddd", background:"white", cursor:"pointer", fontSize:"14px", color:"#555" }}>Discard</button>
                 <button onClick={savePrescription} disabled={loading} style={{ flex:2, padding:"12px", borderRadius:"8px", background:loading?"#93c5fd":"#0f4c81", color:"white", border:"none", cursor:loading?"not-allowed":"pointer", fontSize:"14px", fontWeight:"600" }}>
                   {loading?"Saving...":"Save & Issue Prescription"}
                 </button>
