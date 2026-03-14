@@ -367,8 +367,6 @@ function checkInteractions(medNames: string[]): InteractionWarning[] {
   return warnings;
 }
 
-}
-
 // ════════════════════════════════════════════════════════
 //  ★ CLINICAL DECISION SUPPORT (CDS) ENGINE
 //  1. Dose Calculator — weight/age-based dosing
