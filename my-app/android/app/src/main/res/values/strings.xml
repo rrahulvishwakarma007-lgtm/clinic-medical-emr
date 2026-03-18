@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MediCare EMR</string>
+    <string name="title_activity_main">MediCare EMR</string>
+    <string name="package_name">com.medicare.emr</string>
+    <string name="custom_url_scheme">com.medicare.emr</string>
+</resources>
