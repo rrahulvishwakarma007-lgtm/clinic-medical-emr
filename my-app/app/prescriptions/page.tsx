@@ -267,7 +267,7 @@ const LAB_TEST_DB: Array<{ name: string; category: typeof LAB_CATEGORIES[number]
   { name: "Complement C4", category: "Immunology/Autoimmune", code: "C4" },
   { name: "CH50 (Total Haemolytic Complement)", category: "Immunology/Autoimmune", code: "CH50" },
   { name: "Anti-Phospholipid Antibody (APLA) Panel", category: "Immunology/Autoimmune", code: "APLA" },
-  { name: "Lupus Anticoagulant", category: "Immunology/Autoimmune", code: "LAC" },
+  { name: "Lupus Anticoagulant", category: "Immunology/Autoimmune", code: "LUPAC" },
   { name: "Anti-Cardiolipin IgG / IgM", category: "Immunology/Autoimmune", code: "ACARDIO" },
   { name: "Beta-2 Glycoprotein I Antibody", category: "Immunology/Autoimmune", code: "B2GPI" },
   { name: "IgE Total (Allergy Screening)", category: "Immunology/Autoimmune", code: "IGE" },
@@ -555,15 +555,14 @@ const LAB_TEST_DB: Array<{ name: string; category: typeof LAB_CATEGORIES[number]
   { name: "Tissue Biopsy (Incisional / Excisional)", category: "Others", code: "BIOPSY" },
   { name: "Trucut Biopsy", category: "Others", code: "TRUCUT" },
   { name: "Immunohistochemistry (IHC — Tumour Panel)", category: "Others", code: "IHC" },
-  { name: "Flow Cytometry (Leukaemia / Lymphoma Panel)", category: "page.tsxOthers", code: "FLOWCYT" },
+  { name: "Flow Cytometry (Leukaemia / Lymphoma Panel)", category: "Others", code: "FLOWCYT" },
   { name: "Urodynamic Study (UDS)", category: "Others", code: "UDS" },
   { name: "Cystoscopy", category: "Others", code: "CYSTOSC" },
   { name: "Flexible Cystoscopy", category: "Others", code: "FLCYST" },
   { name: "Uroflowmetry + PVR", category: "Others", code: "UROFLOW" },
   { name: "Nerve Block / Joint Injection (Diagnostic)", category: "Others", code: "NERVBLK" },
   { name: "Therapeutic Drug Monitoring (TDM) Panel", category: "Others", code: "TDM" },
-    ];
-
+];
 
 type LabStatus = "Pending" | "Sample Collected" | "Processing" | "Completed" | "Cancelled";
 
@@ -2865,28 +2864,267 @@ function PrescriptionsPageInner() {
     const statTests = order.tests.filter(t => t.urgency === "STAT");
     const urgentTests = order.tests.filter(t => t.urgency === "Urgent");
     const routineTests = order.tests.filter(t => t.urgency === "Routine");
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Lab Request - ${order.patient_name}</title>
+
+    // ── Lab Test Hindi Purpose Map ──
+    const LAB_PURPOSE_MAP: Record<string, string> = {
+      // Haematology
+      "CBC": "खून की पूरी जाँच — खून की कमी, इन्फेक्शन और प्लेटलेट देखने के लिए",
+      "HB": "खून में हीमोग्लोबिन की मात्रा जाँचने के लिए (खून की कमी)",
+      "WBCDIFF": "सफेद रक्त कोशिकाओं की गिनती — इन्फेक्शन या एलर्जी देखने के लिए",
+      "PLT": "प्लेटलेट की गिनती — खून जमने की क्षमता जाँचने के लिए",
+      "ESR": "शरीर में सूजन और इन्फेक्शन की जाँच के लिए",
+      "PBS": "खून की कोशिकाओं का सूक्ष्मदर्शी से परीक्षण",
+      "RETIC": "नई लाल रक्त कोशिकाएं बनने की जाँच",
+      "PCV": "खून में लाल कोशिकाओं का प्रतिशत",
+      "BLOODGRP": "खून का ग्रुप और Rh टाइप जाँचने के लिए",
+      "G6PD": "G6PD एन्ज़ाइम की कमी जाँचने के लिए",
+      "HBEP": "सिकल सेल और थैलेसीमिया की जाँच के लिए",
+      // Biochemistry
+      "RBS": "अभी के समय शुगर (blood sugar) की जाँच",
+      "FBS": "खाली पेट शुगर की जाँच (8 घंटे उपवास के बाद)",
+      "PPBS": "खाने के 2 घंटे बाद शुगर की जाँच",
+      "HBA1C": "पिछले 3 महीने की औसत शुगर जाँचने के लिए",
+      "OGTT": "डायबिटीज़ और गर्भकालीन शुगर की जाँच",
+      "ELEC": "खून में सोडियम, पोटेशियम और क्लोराइड की जाँच",
+      "NA": "खून में नमक (सोडियम) की मात्रा जाँचने के लिए",
+      "K": "खून में पोटेशियम की मात्रा — दिल और किडनी के लिए ज़रूरी",
+      "CA": "खून में कैल्शियम की मात्रा — हड्डी और नसों के लिए",
+      "MG": "खून में मैग्नीशियम की मात्रा",
+      "PHOS": "खून में फॉस्फोरस की मात्रा",
+      "UA": "यूरिक एसिड की जाँच — गाउट (gout) की जाँच के लिए",
+      "IRON": "खून में आयरन की मात्रा — खून की कमी जाँचने के लिए",
+      "TIBC": "आयरन ले जाने की क्षमता जाँचने के लिए",
+      "FERR": "शरीर में जमा आयरन की मात्रा जाँचने के लिए",
+      "B12": "विटामिन B12 की कमी जाँचने के लिए — नसों और खून के लिए ज़रूरी",
+      "VITD": "विटामिन डी की कमी जाँचने के लिए — हड्डियों के लिए ज़रूरी",
+      "FOLATE": "फोलिक एसिड की कमी जाँचने के लिए",
+      "ABG": "खून में ऑक्सीजन और CO2 की मात्रा — साँस की गंभीर बीमारी में",
+      "AMYL": "अग्नाशय (pancreas) की सूजन जाँचने के लिए",
+      "LIPASE": "अग्नाशय की बीमारी जाँचने के लिए",
+      // Liver
+      "LFT": "लिवर (जिगर) की पूरी जाँच",
+      "SGOT": "लिवर और दिल की मांसपेशियों की जाँच",
+      "SGPT": "लिवर की जाँच — यह बढ़ा हो तो लिवर में सूजन है",
+      "TBIL": "पीलिया (jaundice) की जाँच — खून में पित्त की मात्रा",
+      "DBIL": "पित्त नली की रुकावट जाँचने के लिए",
+      "ALP": "हड्डी और लिवर की बीमारी जाँचने के लिए",
+      "GGT": "लिवर की बीमारी और शराब के प्रभाव जाँचने के लिए",
+      "ALB": "लिवर की कार्यक्षमता और पोषण जाँचने के लिए",
+      // Renal
+      "RFT": "किडनी (गुर्दे) की पूरी जाँच",
+      "CREAT": "किडनी की कार्यक्षमता जाँचने के लिए",
+      "BUN": "किडनी द्वारा यूरिया फिल्टर करने की क्षमता",
+      "EGFR": "किडनी कितनी अच्छी तरह काम कर रही है — यह नंबर जाँचता है",
+      "U24P": "24 घंटे के पेशाब में प्रोटीन — किडनी की बीमारी जाँचने के लिए",
+      "ACR": "किडनी की बारीक नसों की जाँच (मधुमेह में ज़रूरी)",
+      // Lipid
+      "LIPID": "कोलेस्ट्रॉल की पूरी जाँच — दिल की बीमारी का खतरा जाँचने के लिए",
+      "TC": "कुल कोलेस्ट्रॉल की मात्रा",
+      "HDL": "अच्छा कोलेस्ट्रॉल — यह ज़्यादा होना अच्छा है",
+      "LDL": "बुरा कोलेस्ट्रॉल — यह कम होना अच्छा है",
+      "TG": "ट्राइग्लिसराइड (चर्बी) — दिल की बीमारी का खतरा जाँचने के लिए",
+      "VLDL": "बहुत कम घनत्व वाला कोलेस्ट्रॉल",
+      // Coagulation
+      "PT_INR": "खून जमने में लगने वाला समय — वार्फरिन लेने वालों के लिए ज़रूरी",
+      "INR": "खून जमने की जाँच — warfarin की मात्रा सही है या नहीं",
+      "APTT": "खून जमने की क्षमता जाँचने के लिए",
+      "DDIMER": "खून के थक्के (clot) की जाँच — DVT और PE संदेह में",
+      "FIB": "फाइब्रिनोजेन — खून जमाने वाला प्रोटीन",
+      "BT": "खून बंद होने में लगने वाला समय",
+      // Thyroid/Endocrine
+      "TSH": "थायरॉइड ग्रंथि की जाँच — TSH बढ़ा हो तो थायरॉइड कम काम कर रहा है",
+      "T3": "थायरॉइड हार्मोन T3 की मात्रा",
+      "T4": "थायरॉइड हार्मोन T4 की मात्रा",
+      "FT3": "मुक्त थायरॉइड हार्मोन T3",
+      "FT4": "मुक्त थायरॉइड हार्मोन T4",
+      "ANTITPO": "थायरॉइड पर हमला करने वाली एंटीबॉडी — ऑटोइम्यून थायरॉइड की जाँच",
+      "PTH": "पैराथायरॉइड हार्मोन — कैल्शियम नियंत्रण की जाँच",
+      "CORT": "कॉर्टिसोल हार्मोन — अधिवृक्क ग्रंथि की जाँच",
+      "FSH": "महिलाओं में अंडाशय और पुरुषों में शुक्राणु की जाँच",
+      "LH": "प्रजनन हार्मोन LH की जाँच",
+      "PRL": "प्रोलैक्टिन हार्मोन — स्तन से दूध और मासिक धर्म की जाँच",
+      "E2": "महिला हार्मोन एस्ट्रोजन की जाँच",
+      "PROG": "प्रोजेस्टेरोन हार्मोन की जाँच",
+      "TESTO": "पुरुष हार्मोन टेस्टोस्टेरोन की जाँच",
+      "AMH": "अंडाशय में बचे अंडों की संख्या जाँचने के लिए (प्रजनन जाँच)",
+      "INSF": "इंसुलिन की मात्रा — इंसुलिन प्रतिरोध जाँचने के लिए",
+      "HOMA": "इंसुलिन प्रतिरोध (insulin resistance) की जाँच",
+      // Cardiology
+      "TROPI": "दिल के दौरे (heart attack) की जाँच — सीने में दर्द होने पर",
+      "TROPT": "दिल के दौरे की जाँच (Troponin T)",
+      "CKMB": "दिल की मांसपेशियों की क्षति जाँचने के लिए",
+      "CPK": "मांसपेशियों की क्षति जाँचने के लिए",
+      "BNP": "दिल की विफलता (heart failure) जाँचने के लिए",
+      "NTPROBNP": "दिल की विफलता की जाँच (NT-proBNP)",
+      "HSCRP": "दिल की बीमारी का खतरा जाँचने के लिए",
+      "LDH": "मांसपेशियों और लिवर की क्षति जाँचने के लिए",
+      // Serology
+      "CRP": "शरीर में सूजन और इन्फेक्शन जाँचने के लिए",
+      "RAF": "रूमेटाइड आर्थराइटिस (गठिया) जाँचने के लिए",
+      "ASO": "गले के स्ट्रेप्टोकोकल इन्फेक्शन की जाँच — बुखार और जोड़ों के दर्द में",
+      "WIDAL": "टाइफाइड बुखार की जाँच",
+      "DENGNS1": "डेंगू बुखार की जाँच (NS1 एंटीजन)",
+      "DENGIGG": "पुराने डेंगू इन्फेक्शन की जाँच",
+      "DENGIGM": "नए डेंगू इन्फेक्शन की जाँच",
+      "DENGCOMBO": "डेंगू की पूरी जाँच (NS1 + IgG + IgM)",
+      "MAL": "मलेरिया की जाँच (RDT)",
+      "MPSMEAR": "मलेरिया की पक्की जाँच (खून की स्लाइड)",
+      "HBSAG": "हेपेटाइटिस बी (पीलिया) की जाँच",
+      "HCV": "हेपेटाइटिस सी की जाँच",
+      "HBVDNA": "हेपेटाइटिस बी वायरस की मात्रा जाँचने के लिए",
+      "HCVRNA": "हेपेटाइटिस सी वायरस की मात्रा जाँचने के लिए",
+      "HIV": "HIV/AIDS की जाँच",
+      "HIVVL": "HIV वायरस की मात्रा जाँचने के लिए",
+      "CD4": "HIV में रोग प्रतिरोधक क्षमता जाँचने के लिए",
+      "VDRL": "सिफलिस (यौन रोग) की जाँच",
+      "COVIDRAT": "कोविड-19 की त्वरित जाँच (Rapid Antigen Test)",
+      "COVIDPCR": "कोविड-19 की पक्की जाँच (RT-PCR)",
+      "HPYLST": "पेट में H. pylori बैक्टीरिया की जाँच (मल से)",
+      "HPYLUBT": "पेट में H. pylori की जाँच (सांस परीक्षण)",
+      "LEPTO": "लेप्टोस्पायरोसिस (बाढ़ के बाद बुखार) की जाँच",
+      "SCRUB": "स्क्रब टाइफस (कीड़े के काटने से बुखार) की जाँच",
+      "CHIK": "चिकनगुनिया की जाँच",
+      // Autoimmune
+      "ANA": "ऑटोइम्यून बीमारी (SLE/lupus) की जाँच",
+      "DSDNA": "SLE (Lupus) की पक्की जाँच",
+      "ACCP": "रूमेटाइड आर्थराइटिस की विशेष जाँच",
+      "ANCA": "रक्त वाहिनियों की सूजन जाँचने के लिए",
+      "C3": "रोग प्रतिरोधक प्रणाली की जाँच (Complement C3)",
+      "C4": "रोग प्रतिरोधक प्रणाली की जाँच (Complement C4)",
+      "APLA": "खून के थक्के और गर्भपात के कारण जाँचने के लिए",
+      "IGE": "एलर्जी की जाँच (कुल IgE)",
+      "TTGA": "सीलिएक रोग (गेहूँ से एलर्जी) की जाँच",
+      "GADA": "Type 1 Diabetes की जाँच",
+      // Urine/Stool
+      "URINE": "पेशाब की पूरी जाँच — किडनी, मूत्र नली और शुगर जाँचने के लिए",
+      "URINECS": "पेशाब में इन्फेक्शन और सही दवाई जाँचने के लिए",
+      "UPT": "गर्भावस्था जाँचने के लिए (pregnancy test)",
+      "UMICRO": "किडनी की बारीक क्षति जाँचने के लिए (diabetics में ज़रूरी)",
+      "UDRUG": "शरीर में नशीले पदार्थ जाँचने के लिए",
+      "STOOL": "पेट में कीड़े, इन्फेक्शन और पाचन जाँचने के लिए",
+      "STOOLCS": "पेट के इन्फेक्शन की दवाई जाँचने के लिए",
+      "FOB": "मल में छुपा खून जाँचने के लिए (आँत के कैंसर की स्क्रीनिंग)",
+      "STOOLOP": "पेट में परजीवी (worms/amoeba) जाँचने के लिए",
+      "STOOLCAL": "आँत की सूजन जाँचने के लिए (Crohn's/UC)",
+      "CDIFF": "दस्त में Clostridium difficile बैक्टीरिया जाँचने के लिए",
+      // Microbiology
+      "BLOODCS": "खून के गंभीर इन्फेक्शन की जाँच और सही दवाई ढूंढने के लिए",
+      "SPUTCS": "बलगम के इन्फेक्शन की जाँच",
+      "SPUTAFB": "TB (तपेदिक/क्षयरोग) की जाँच",
+      "GENEX": "TB की तेज़ और पक्की जाँच (GeneXpert)",
+      "MANTOUX": "TB का पुराना इन्फेक्शन जाँचने के लिए (skin test)",
+      "QFTB": "TB की आधुनिक जाँच (रक्त परीक्षण)",
+      "THROATCS": "गले के इन्फेक्शन की जाँच",
+      "WOUNDCS": "घाव के इन्फेक्शन की जाँच",
+      "KOH": "त्वचा के फंगल इन्फेक्शन की जाँच",
+      "CSFCS": "दिमाग की झिल्ली के इन्फेक्शन (meningitis) की जाँच",
+      "MRSA": "दवा-प्रतिरोधी बैक्टीरिया MRSA की जाँच",
+      // Tumour Markers
+      "PSA": "प्रोस्टेट कैंसर की जाँच (पुरुषों में)",
+      "CA125": "अंडाशय (ovarian) कैंसर की जाँच",
+      "CA199": "अग्नाशय (pancreatic) कैंसर की जाँच",
+      "CA153": "स्तन (breast) कैंसर की जाँच",
+      "CEA": "बड़ी आँत और फेफड़े के कैंसर की जाँच",
+      "AFP": "लिवर कैंसर और कुछ जन्मजात बीमारियों की जाँच",
+      "BHCG": "गर्भावस्था और कुछ ट्यूमर की जाँच",
+      "NSE": "फेफड़े के small cell कैंसर की जाँच",
+      "CYFRA": "फेफड़े के squamous cell कैंसर की जाँच",
+      "SPEP": "खून में असामान्य प्रोटीन जाँचने के लिए (myeloma की जाँच)",
+      "B2MG": "मल्टीपल मायलोमा और लिम्फोमा की जाँच",
+      // Radiology
+      "CXR": "छाती का X-ray — फेफड़े, दिल और हड्डी देखने के लिए",
+      "XRAYABD": "पेट का X-ray — आँत की रुकावट या पथरी देखने के लिए",
+      "USGABD": "पेट का अल्ट्रासाउंड — लिवर, किडनी, पित्ताशय देखने के लिए",
+      "USGPELV": "पेल्विस का अल्ट्रासाउंड — गर्भाशय और अंडाशय देखने के लिए",
+      "USGKUB": "किडनी और मूत्र नली का अल्ट्रासाउंड — पथरी देखने के लिए",
+      "USGNECK": "गर्दन का अल्ट्रासाउंड — थायरॉइड ग्रंथि देखने के लिए",
+      "USGOBS": "गर्भावस्था का अल्ट्रासाउंड — बच्चे की वृद्धि देखने के लिए",
+      "HRCT": "फेफड़ों की विस्तृत CT — COVID, TB, ILD जाँचने के लिए",
+      "CTHP": "दिमाग का CT — चोट, स्ट्रोक देखने के लिए",
+      "CTABDP": "पेट का CT — ट्यूमर और अंगों की विस्तृत जाँच",
+      "CTPA": "फेफड़े की नसों में थक्का (PE) जाँचने के लिए",
+      "MRIBRAIN": "दिमाग का MRI — स्ट्रोक, ट्यूमर, MS देखने के लिए",
+      "MRISPINE": "रीढ़ की हड्डी का MRI — slip disc, दबाव जाँचने के लिए",
+      "DEXA": "हड्डियों का घनत्व — ऑस्टियोपोरोसिस जाँचने के लिए",
+      "MAMMO": "स्तन कैंसर की स्क्रीनिंग (mammography)",
+      "PETCT": "कैंसर फैलाव जाँचने के लिए (PET-CT scan)",
+      // ECG/Cardiology Procedures
+      "ECG": "दिल की विद्युत गतिविधि जाँचने के लिए — दिल के दौरे और धड़कन की अनियमितता",
+      "ECHO": "दिल का अल्ट्रासाउंड — वाल्व और दिल की पंपिंग जाँचने के लिए",
+      "TMT": "कसरत के दौरान दिल की जाँच — एनजाइना देखने के लिए",
+      "HOLTER": "24 घंटे दिल की निगरानी — अनियमित धड़कन जाँचने के लिए",
+      "ABPM": "24 घंटे BP की निगरानी — BP का सही माप",
+      // Pulmonology
+      "PFT": "साँस की क्षमता जाँचने के लिए — दमा और COPD की जाँच",
+      "SPO2": "खून में ऑक्सीजन की मात्रा जाँचने के लिए",
+      "PSG": "नींद की जाँच — खर्राटे और sleep apnea देखने के लिए",
+      // Gastroenterology
+      "OGD": "पेट और आँत की एंडोस्कोपी — अल्सर और कैंसर देखने के लिए",
+      "COLON": "बड़ी आँत की जाँच (colonoscopy) — कैंसर स्क्रीनिंग",
+      "MRCP": "पित्त नली और अग्नाशय की MRI जाँच",
+      // Neurology
+      "EEG": "दिमाग की विद्युत गतिविधि — मिर्गी (epilepsy) जाँचने के लिए",
+      "NCS": "नसों की गति जाँचने के लिए — neuropathy और carpal tunnel",
+      "EMG": "मांसपेशियों की विद्युत गतिविधि जाँचने के लिए",
+      // Gynaecology
+      "BHCG_G": "गर्भावस्था पक्की करने के लिए (रक्त HCG)",
+      "PAPSMEAR": "गर्भाशय ग्रीवा के कैंसर की स्क्रीनिंग",
+      "HPVDNA": "गर्भाशय ग्रीवा के कैंसर का वायरस जाँचने के लिए",
+      "SEMEN": "पुरुष बाँझपन की जाँच — शुक्राणु की संख्या और गुणवत्ता",
+      "TORCH": "गर्भावस्था में संक्रमण की जाँच (Toxoplasma, Rubella, CMV, HSV)",
+      "NTSCAN": "गर्भ में Down Syndrome का खतरा जाँचने के लिए",
+      "ANOMALY": "गर्भ में बच्चे की सामान्य वृद्धि और अंगों की जाँच",
+      "GCT": "गर्भावस्था में शुगर की जाँच",
+      "OGTTG": "गर्भावस्था में मधुमेह (gestational diabetes) की जाँच",
+      // Paediatric
+      "NEONSCR": "नवजात शिशु की थायरॉइड और अन्य जाँच",
+      "BONEAGE": "बच्चे की हड्डी की उम्र जाँचने के लिए — लंबाई रुकने पर",
+      "LEAD": "खून में सीसा (lead) की मात्रा जाँचने के लिए",
+      // Others
+      "FNAC": "गाँठ या ट्यूमर की बारीक सुई से जाँच",
+      "BIOPSY": "ऊतक की जाँच — कैंसर की पुष्टि के लिए",
+      "IHC": "कैंसर के प्रकार की विस्तृत जाँच",
+      "FLOWCYT": "खून के कैंसर (leukaemia/lymphoma) की विस्तृत जाँच",
+      "UROFLOW": "पेशाब की धार और प्रोस्टेट जाँचने के लिए",
+      "AUDIO": "सुनने की क्षमता जाँचने के लिए",
+      "IOP": "आँख का दबाव — काला मोतिया (glaucoma) जाँचने के लिए",
+      "FUNDO": "आँख के पर्दे की जाँच — मधुमेह और BP का आँख पर असर",
+      "SPT": "एलर्जी परीक्षण — त्वचा पर एलर्जी जाँचने के लिए",
+      "TDM": "दवाई का स्तर खून में जाँचने के लिए",
+    };
+
+    function getLabPurpose(code: string, name: string): string {
+      return LAB_PURPOSE_MAP[code] || "";
+    }
+
+    w.document.write(`<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8"/><title>Lab Request - ${order.patient_name}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
     <style>
-      body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:24px;color:#1a1a2e;font-size:13px}
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'DM Sans',sans-serif;padding:28px;color:#1a1a2e;font-size:13px;background:white}
       .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0f4c81;padding-bottom:14px;margin-bottom:18px}
       .hosp-name{font-size:20px;font-weight:800;color:#0f4c81}
       .hosp-sub{font-size:11px;color:#666;margin-top:3px}
-      .lab-title{font-size:16px;font-weight:700;color:#b91c1c;border:2px solid #b91c1c;padding:4px 14px;border-radius:6px}
+      .lab-title{font-size:15px;font-weight:700;color:#b91c1c;border:2px solid #b91c1c;padding:4px 14px;border-radius:6px}
       .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f8fbff;padding:14px;border-radius:8px;margin-bottom:16px;border:1px solid #d1e3f8}
-      .info-item label{font-size:10px;color:#888;font-weight:700;text-transform:uppercase;display:block;margin-bottom:2px}
+      .info-item label{font-size:9px;color:#888;font-weight:700;text-transform:uppercase;display:block;margin-bottom:2px}
       .info-item span{font-size:14px;font-weight:600;color:#1a1a2e}
       .section-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;padding:5px 10px;border-radius:5px}
       .stat-section .section-title{background:#fef2f2;color:#b91c1c}
       .urgent-section .section-title{background:#fffbeb;color:#b45309}
       .routine-section .section-title{background:#f0fdf4;color:#15803d}
-      .test-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;margin-bottom:4px;border:1px solid #e8edf3}
-      .checkbox{width:14px;height:14px;border:2px solid #aaa;border-radius:3px;display:inline-block;margin-right:4px}
-      .test-name{font-weight:600;font-size:13px}
-      .test-code{font-size:10px;color:#999;margin-left:auto}
-      .test-notes{font-size:11px;color:#666;font-style:italic}
-      .footer{margin-top:24px;padding-top:12px;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#999}
+      .test-row{padding:8px 12px;border-radius:7px;margin-bottom:5px;border:1px solid #e8edf3;background:white}
+      .test-top{display:flex;align-items:center;gap:8px}
+      .checkbox{width:14px;height:14px;border:2px solid #aaa;border-radius:3px;display:inline-block;flex-shrink:0}
+      .test-name{font-weight:700;font-size:13px;color:#1a1a2e;flex:1}
+      .test-code{font-size:10px;color:#aaa;background:#f5f5f5;padding:1px 6px;border-radius:4px}
+      .test-purpose{font-family:'Noto Sans Devanagari',sans-serif;font-size:11px;color:#0f4c81;margin-top:4px;margin-left:22px;background:#f0f7ff;padding:3px 8px;border-radius:4px;border-left:2px solid #bfdbfe}
+      .test-notes{font-size:10px;color:#666;font-style:italic;margin-top:2px;margin-left:22px}
+      .patient-hindi{font-family:'Noto Sans Devanagari',sans-serif;background:#fffbf0;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#555}
+      .patient-hindi strong{color:#b45309}
+      .footer{margin-top:20px;padding-top:12px;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#999}
       .sign-box{border-top:1px solid #333;width:180px;text-align:center;padding-top:6px;font-size:11px;color:#555}
-      @media print{body{padding:12px}}
+      @media print{body{padding:14px}}
     </style></head><body>
     <div class="header">
       <div>
@@ -2896,16 +3134,45 @@ function PrescriptionsPageInner() {
       <div class="lab-title">🔬 LAB REQUEST FORM</div>
     </div>
     <div class="info-grid">
-      <div class="info-item"><label>Patient Name</label><span>${order.patient_name}</span></div>
-      <div class="info-item"><label>Order Date</label><span>${order.ordered_at.split("T")[0]}</span></div>
-      <div class="info-item"><label>Ordered By</label><span>${hospitalConfig.doctorName}</span></div>
-      <div class="info-item"><label>Diagnosis / Indication</label><span>${order.diagnosis || "—"}</span></div>
+      <div class="info-item"><label>Patient Name / मरीज़ का नाम</label><span>${order.patient_name}</span></div>
+      <div class="info-item"><label>Order Date / तारीख</label><span>${order.ordered_at.split("T")[0]}</span></div>
+      <div class="info-item"><label>Ordered By / डॉक्टर</label><span>${hospitalConfig.doctorName}</span></div>
+      <div class="info-item"><label>Diagnosis / बीमारी</label><span>${order.diagnosis || "—"}</span></div>
     </div>
-    ${statTests.length ? `<div class="stat-section" style="margin-bottom:14px"><div class="section-title">🚨 STAT — Process Immediately</div>${statTests.map(t=>`<div class="test-row"><span class="checkbox"></span><span class="test-name">${t.name}</span><span class="test-code">${t.code}</span>${t.notes?`<span class="test-notes">${t.notes}</span>`:""}</div>`).join("")}</div>` : ""}
-    ${urgentTests.length ? `<div class="urgent-section" style="margin-bottom:14px"><div class="section-title">⚡ URGENT</div>${urgentTests.map(t=>`<div class="test-row"><span class="checkbox"></span><span class="test-name">${t.name}</span><span class="test-code">${t.code}</span>${t.notes?`<span class="test-notes">${t.notes}</span>`:""}</div>`).join("")}</div>` : ""}
-    ${routineTests.length ? `<div class="routine-section" style="margin-bottom:14px"><div class="section-title">✓ ROUTINE</div>${routineTests.map(t=>`<div class="test-row"><span class="checkbox"></span><span class="test-name">${t.name}</span><span class="test-code">${t.code}</span>${t.notes?`<span class="test-notes">${t.notes}</span>`:""}</div>`).join("")}</div>` : ""}
+
+    <div class="patient-hindi">
+      🏥 <strong>मरीज़ के लिए:</strong> नीचे दी गई जाँचें करवानी हैं। हर जाँच के सामने उसका कारण लिखा है ताकि आप समझ सकें।
+    </div>
+
+    ${statTests.length ? `<div class="stat-section" style="margin-bottom:14px">
+      <div class="section-title">🚨 STAT — तुरंत करें (Process Immediately)</div>
+      ${statTests.map(t => `<div class="test-row">
+        <div class="test-top"><span class="checkbox"></span><span class="test-name">${t.name}</span><span class="test-code">${t.code}</span></div>
+        ${getLabPurpose(t.code, t.name) ? `<div class="test-purpose">💡 ${getLabPurpose(t.code, t.name)}</div>` : ""}
+        ${t.notes ? `<div class="test-notes">📝 ${t.notes}</div>` : ""}
+      </div>`).join("")}
+    </div>` : ""}
+
+    ${urgentTests.length ? `<div class="urgent-section" style="margin-bottom:14px">
+      <div class="section-title">⚡ URGENT — जल्दी करें</div>
+      ${urgentTests.map(t => `<div class="test-row">
+        <div class="test-top"><span class="checkbox"></span><span class="test-name">${t.name}</span><span class="test-code">${t.code}</span></div>
+        ${getLabPurpose(t.code, t.name) ? `<div class="test-purpose">💡 ${getLabPurpose(t.code, t.name)}</div>` : ""}
+        ${t.notes ? `<div class="test-notes">📝 ${t.notes}</div>` : ""}
+      </div>`).join("")}
+    </div>` : ""}
+
+    ${routineTests.length ? `<div class="routine-section" style="margin-bottom:14px">
+      <div class="section-title">✓ ROUTINE — सामान्य जाँचें</div>
+      ${routineTests.map(t => `<div class="test-row">
+        <div class="test-top"><span class="checkbox"></span><span class="test-name">${t.name}</span><span class="test-code">${t.code}</span></div>
+        ${getLabPurpose(t.code, t.name) ? `<div class="test-purpose">💡 ${getLabPurpose(t.code, t.name)}</div>` : ""}
+        ${t.notes ? `<div class="test-notes">📝 ${t.notes}</div>` : ""}
+      </div>`).join("")}
+    </div>` : ""}
+
     <div class="footer">
-      <div>Lab Order ID: LAB-${order.id.slice(0,8).toUpperCase()}</div>
+      <div>Lab Order ID: LAB-${order.id.slice(0,8).toUpperCase()}<br/><span style="font-family:'Noto Sans Devanagari',sans-serif;font-size:10px;color:#bbb">यह कंप्यूटर द्वारा बनाई गई जाँच पर्ची है</span></div>
       <div class="sign-box">${hospitalConfig.doctorName}<br/>${hospitalConfig.doctorDegree}</div>
     </div>
     <script>window.onload=()=>{window.print();}<\/script>
@@ -3538,6 +3805,94 @@ function PrescriptionsPageInner() {
         purpose: "मुँह के छाले और दाँत दर्द में सुन्न करने के लिए — लगाएं" },
       { keywords: ["strepsils","difflam spray","throat lozenge"],
         purpose: "गले में दर्द और खराश के लिए" },
+
+      // ── Suppositories / Rectal ──
+      { keywords: ["glycerin suppository","glycerine suppository","glycerol suppository"],
+        purpose: "कब्ज़ दूर करने के लिए — मलद्वार (गुदा) में डालें, 15-30 मिनट में काम करता है" },
+      { keywords: ["bisacodyl suppository"],
+        purpose: "कब्ज़ दूर करने के लिए — मलद्वार में डालें" },
+      { keywords: ["diclofenac suppository","indomethacin suppository","paracetamol suppository"],
+        purpose: "दर्द और बुखार के लिए — मलद्वार में डालें (जब मुँह से न ले सकें)" },
+      { keywords: ["mesalazine suppository","mesalamine suppository"],
+        purpose: "आँत की सूजन (ulcerative colitis) के लिए — मलद्वार में डालें" },
+      { keywords: ["proctosedyl","xylocaine jelly","lignocaine suppository"],
+        purpose: "बवासीर (piles) के दर्द और जलन के लिए" },
+
+      // ── Patches / Transdermal ──
+      { keywords: ["transdermal patch","fentanyl patch","buprenorphine patch","nitroglycerin patch"],
+        purpose: "त्वचा पर चिपकाने वाली दवाई — दर्द या दिल की बीमारी के लिए" },
+      { keywords: ["nicotine patch","nicotine gum"],
+        purpose: "धूम्रपान छोड़ने में मदद के लिए" },
+      { keywords: ["estradiol patch","oestrogen patch"],
+        purpose: "मेनोपॉज़ के लक्षण कम करने के लिए — त्वचा पर चिपकाएं" },
+      { keywords: ["diclofenac patch","voltaren patch"],
+        purpose: "जोड़ों के दर्द के लिए — दर्द वाली जगह पर चिपकाएं" },
+
+      // ── Lozenges / Sachets / Powders ──
+      { keywords: ["ors sachet","electral sachet","electrolyte sachet"],
+        purpose: "दस्त में पानी और नमक की कमी पूरी करने के लिए — हर पतले दस्त के बाद 1 गिलास पिएं" },
+      { keywords: ["l-ornithine l-aspartate sachet","lola sachet"],
+        purpose: "लिवर की बीमारी में अमोनिया कम करने के लिए" },
+      { keywords: ["cholestyramine sachet","bile acid sequestrant"],
+        purpose: "कोलेस्ट्रॉल और पित्त अम्ल कम करने के लिए" },
+      { keywords: ["acetylcysteine 200mg sachet","nac sachet","n-acetylcysteine sachet"],
+        purpose: "बलगम पतला करने और लिवर की सुरक्षा के लिए" },
+      { keywords: ["montelukast 4mg granules","montelukast granules"],
+        purpose: "एलर्जी और दमे की रोकथाम के लिए — दूध या खाने में मिलाकर दें" },
+      { keywords: ["protein powder","whey protein","soy protein"],
+        purpose: "कमज़ोरी दूर करने और माँसपेशियाँ बनाने के लिए" },
+      { keywords: ["strontium ranelate sachet"],
+        purpose: "हड्डियाँ मज़बूत करने के लिए — सोने से पहले दूध में मिलाकर लें" },
+
+      // ── Inhalers ──
+      { keywords: ["salbutamol inhaler","ventolin inhaler","asthalin inhaler"],
+        purpose: "दमे के दौरे में साँस की नली खोलने के लिए — जरूरत पड़ने पर लें (Reliever)" },
+      { keywords: ["salmeterol fluticasone","seretide","advair","combitide"],
+        purpose: "दमे और COPD में साँस की नली खोलने और सूजन रोकने के लिए (Combination Inhaler)" },
+      { keywords: ["formoterol budesonide","symbicort","foracort"],
+        purpose: "दमे और COPD में साँस की तकलीफ कम करने के लिए (Combination Inhaler)" },
+      { keywords: ["tiotropium","spiriva","tiova"],
+        purpose: "COPD में साँस की नली को 24 घंटे खुला रखने के लिए — एक बार रोज़ लें" },
+      { keywords: ["fluticasone inhaler","beclomethasone inhaler","budesonide inhaler"],
+        purpose: "दमे में सूजन रोकने के लिए (Controller Inhaler) — रोज़ लें, दौरे में नहीं" },
+
+      // ── Nasal / Throat Sprays ──
+      { keywords: ["budesonide nasal spray","fluticasone nasal spray","mometasone nasal spray"],
+        purpose: "नाक की एलर्जी और सूजन के लिए — रोज़ सुबह नाक में स्प्रे करें" },
+      { keywords: ["oxymetazoline nasal","xylometazoline nasal"],
+        purpose: "बंद नाक खोलने के लिए — 3 दिन से ज्यादा इस्तेमाल न करें" },
+      { keywords: ["saline nasal"],
+        purpose: "नाक साफ करने के लिए — पूरी तरह सुरक्षित, बार-बार इस्तेमाल कर सकते हैं" },
+
+      // ── Oral Solutions / Liquids ──
+      { keywords: ["sucralfate suspension","sucralfate syrup"],
+        purpose: "पेट और आँत के अल्सर पर सुरक्षा परत बनाने के लिए — खाने से 1 घंटे पहले लें" },
+      { keywords: ["antacid syrup","antacid gel","magaldrate","aluminium hydroxide syrup"],
+        purpose: "एसिडिटी और पेट की जलन से तुरंत राहत के लिए — खाने के बाद लें" },
+      { keywords: ["phosphate binder","sevelamer","calcium carbonate tablet","lanthanum"],
+        purpose: "किडनी की बीमारी में फॉस्फेट कम करने के लिए — खाने के साथ लें" },
+      { keywords: ["sodium bicarbonate tablet","soda bicarb tablet"],
+        purpose: "एसिडोसिस और पेट की अम्लता कम करने के लिए" },
+
+      // ── Vaccines ──
+      { keywords: ["hepatitis b vaccine","hbv vaccine","engerix","recombivax"],
+        purpose: "हेपेटाइटिस बी (पीलिया) से बचाव के लिए (टीका)" },
+      { keywords: ["influenza vaccine","flu vaccine","fluvax"],
+        purpose: "इन्फ्लुएंज़ा (फ्लू) से बचाव के लिए (टीका) — साल में एक बार" },
+      { keywords: ["covid vaccine","covaxin","covishield","corbevax"],
+        purpose: "कोविड-19 से बचाव के लिए (टीका)" },
+      { keywords: ["typhoid vaccine","typbar","typherix"],
+        purpose: "टाइफाइड बुखार से बचाव के लिए (टीका)" },
+      { keywords: ["rabies vaccine","rabipur","verorab"],
+        purpose: "रेबीज़ (कुत्ते के काटने) से बचाव के लिए (टीका)" },
+      { keywords: ["tetanus vaccine","tt injection","tetanus toxoid"],
+        purpose: "टिटनेस से बचाव के लिए (टीका) — घाव लगने पर ज़रूर लें" },
+      { keywords: ["pneumococcal vaccine","prevenar","pneumovax"],
+        purpose: "निमोनिया और मेनिनजाइटिस से बचाव के लिए (टीका)" },
+      { keywords: ["hpv vaccine","gardasil","cervarix"],
+        purpose: "गर्भाशय ग्रीवा के कैंसर से बचाव के लिए (टीका)" },
+      { keywords: ["varicella vaccine","chickenpox vaccine","varivax"],
+        purpose: "चिकनपॉक्स (छोटी माता) से बचाव के लिए (टीका)" },
     ];
 
 

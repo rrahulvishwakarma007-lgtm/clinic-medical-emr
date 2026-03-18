@@ -404,7 +404,7 @@ export default function VitalsPage() {
                       <YAxis tick={{ fontSize: 11, fill: "#999" }} />
                       <Tooltip
                         contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "12px" }}
-                        formatter={(val: any, name: string) => [`${val} ${VITAL_UNITS[name] || ""}`, VITAL_LABELS[name] || name]}
+                        formatter={(val: any, name: any) => [`${val} ${VITAL_UNITS[name] || ""}`, VITAL_LABELS[name] || name]}
                       />
                       <Legend formatter={(val) => VITAL_LABELS[val] || val} />
 
