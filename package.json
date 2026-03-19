@@ -1,5 +1,8 @@
 {
   "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
     "recharts": "^3.8.0"
   }
 }
