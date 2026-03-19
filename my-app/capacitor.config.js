@@ -1,12 +1,12 @@
-import type { CapacitorConfig } from '@capacitor/cli';
-
-const config: CapacitorConfig = {
+/** @type {import('@capacitor/cli').CapacitorConfig} */
+const config = {
   appId: 'com.medicare.emr',
   appName: 'MediCare EMR',
+  webDir: 'out',
   server: {
     url: 'https://clinic-medical-emr.vercel.app',
     cleartext: true
   }
 };
 
-export default config;
+module.exports = config;
