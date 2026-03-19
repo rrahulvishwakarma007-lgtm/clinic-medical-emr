@@ -1,64 +1,137 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SidebarNav from "@/components/SidebarNav";
 import hospitalConfig from "@/config/hospital";
 import VoiceAssistant from "@/components/VoiceAssistant";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    function checkMobile() {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setOpen(!mobile); // open by default on desktop, closed on mobile
+    }
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f0f4f8" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f0f4f8", position: "relative" }}>
+
+      {/* Overlay — mobile only, closes sidebar when tapping outside */}
+      {isMobile && open && (
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+            zIndex: 150, touchAction: "none",
+          }}
+        />
+      )}
+
       {/* Sidebar */}
       <aside style={{
-        width: open ? "220px" : "0px",
-        minWidth: open ? "220px" : "0px",
+        width: "220px",
+        minWidth: "220px",
         background: "#1a202c",
-        transition: "width 0.25s ease, min-width 0.25s ease",
-        overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        position: "relative",
-        zIndex: 100,
+        position: isMobile ? "fixed" : "sticky",
+        top: 0,
+        left: 0,
+        height: "100vh",
+        zIndex: 200,
+        transform: open ? "translateX(0)" : "translateX(-220px)",
+        transition: "transform 0.25s ease",
+        overflowY: "auto",
+        overflowX: "hidden",
       }}>
         {/* Logo */}
-        <div style={{ padding: "20px 16px 12px", borderBottom: "1px solid rgba(255,255,255,0.08)", whiteSpace: "nowrap" }}>
-          <div style={{ fontSize: "15px", fontWeight: "700", color: "white", lineHeight: 1.3 }}>{hospitalConfig.name}</div>
-          <div style={{ fontSize: "11px", color: "#718096", marginTop: "2px" }}>{hospitalConfig.tagline}</div>
+        <div style={{
+          padding: "16px 16px 12px",
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          whiteSpace: "nowrap",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}>
+          <div>
+            <div style={{ fontSize: "14px", fontWeight: "700", color: "white", lineHeight: 1.3 }}>{hospitalConfig.name}</div>
+            <div style={{ fontSize: "10px", color: "#718096", marginTop: "2px" }}>{hospitalConfig.tagline}</div>
+          </div>
+          {/* Close button — mobile only */}
+          {isMobile && (
+            <button
+              onClick={() => setOpen(false)}
+              style={{
+                background: "rgba(255,255,255,0.08)", border: "none", color: "white",
+                width: "28px", height: "28px", borderRadius: "6px", cursor: "pointer",
+                fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >✕</button>
+          )}
         </div>
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
-          <SidebarNav />
+          <SidebarNav onNavigate={() => isMobile && setOpen(false)} />
         </div>
       </aside>
 
       {/* Main area */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        {/* Top bar with toggle button */}
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        minWidth: 0,
+        marginLeft: isMobile ? 0 : (open ? "0px" : "-220px"),
+        transition: "margin-left 0.25s ease",
+        width: "100%",
+      }}>
+        {/* Top bar */}
         <div style={{
-          height: "48px", background: "white", borderBottom: "1px solid #e2e8f0",
-          display: "flex", alignItems: "center", paddingLeft: "12px", gap: "12px",
-          position: "sticky", top: 0, zIndex: 99, boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
+          height: "52px",
+          background: "white",
+          borderBottom: "1px solid #e2e8f0",
+          display: "flex",
+          alignItems: "center",
+          paddingLeft: "12px",
+          paddingRight: "12px",
+          gap: "12px",
+          position: "sticky",
+          top: 0,
+          zIndex: 99,
+          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
         }}>
+          {/* Hamburger */}
           <button
             onClick={() => setOpen(o => !o)}
-            style={{ background: "none", border: "none", cursor: "pointer", padding: "6px 8px", borderRadius: "6px", display: "flex", flexDirection: "column", gap: "4px", transition: "background 0.15s" }}
-            title={open ? "Close sidebar" : "Open sidebar"}
-            onMouseEnter={e => (e.currentTarget.style.background = "#f0f4f8")}
-            onMouseLeave={e => (e.currentTarget.style.background = "none")}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              padding: "8px", borderRadius: "8px",
+              display: "flex", flexDirection: "column", gap: "4px",
+              flexShrink: 0,
+            }}
           >
-            <span style={{ display: "block", width: "18px", height: "2px", background: "#4a5568", borderRadius: "2px" }} />
-            <span style={{ display: "block", width: "18px", height: "2px", background: "#4a5568", borderRadius: "2px" }} />
-            <span style={{ display: "block", width: "18px", height: "2px", background: "#4a5568", borderRadius: "2px" }} />
+            <span style={{ display: "block", width: "20px", height: "2px", background: "#4a5568", borderRadius: "2px" }} />
+            <span style={{ display: "block", width: "20px", height: "2px", background: "#4a5568", borderRadius: "2px" }} />
+            <span style={{ display: "block", width: "20px", height: "2px", background: "#4a5568", borderRadius: "2px" }} />
           </button>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: "#4a5568" }}>{hospitalConfig.name}</span>
+          <span style={{ fontSize: "14px", fontWeight: "700", color: "#2d3748", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {hospitalConfig.name}
+          </span>
         </div>
 
         {/* Page content */}
-        <main style={{ flex: 1, overflowY: "auto" }}>
+        <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
           {children}
         </main>
       </div>
 
-      {/* 🎙️ Floating Voice Prescription — visible on all pages */}
+      {/* Voice Assistant */}
       <VoiceAssistant />
     </div>
   );
