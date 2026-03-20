@@ -984,3 +984,34 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     grid-template-columns: 1fr !important;
   }
 }
+/* VITALS PAGE MOBILE */
+@media (max-width: 768px) {
+  /* Main layout - stack patient selector and vitals */
+  div[style*="280px 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Vital cards - fit properly */
+  .stat-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* Each vital card - no overflow */
+  .stat-grid > div {
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Chart container - full width */
+  .recharts-responsive-container,
+  div[style*="height: 220"] {
+    width: 100% !important;
+    min-height: 200px !important;
+  }
+
+  /* Chart tabs - scrollable */
+  div[style*="Blood Pressure"] {
+    overflow-x: auto !important;
+  }
+}

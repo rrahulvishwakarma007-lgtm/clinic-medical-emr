@@ -268,7 +268,7 @@ export default function VitalsPage() {
         .modal-anim { animation: slideUp 0.2s ease; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        @media (max-width: 700px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 700px) { .stat-grid { grid-template-columns: 1fr 1fr; } }
         .delete-btn { background: none; border: none; cursor: pointer; color: #e2e8f0; font-size: 14px; padding: 4px 8px; border-radius: 6px; transition: all 0.15s; }
         .delete-btn:hover { background: #fee2e2; color: #e53e3e; }
       `}</style>
@@ -292,7 +292,7 @@ export default function VitalsPage() {
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: "20px", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", flexWrap: "wrap", gap: "20px", alignItems: "start" }}>
 
         {/* ── Left panel: patient list ── */}
         <div style={{ background: "white", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
@@ -397,7 +397,7 @@ export default function VitalsPage() {
                     </div>
                   </div>
 
-                  <ResponsiveContainer width="100%" height={220}>
+                  <ResponsiveContainer width="99%" height={220}>
                     <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" />
                       <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#999" }} />
