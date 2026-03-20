@@ -267,8 +267,8 @@ export default function VitalsPage() {
         @media (max-width: 600px) { .vital-form-grid { grid-template-columns: 1fr; } }
         .modal-anim { animation: slideUp 0.2s ease; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 100%; }
-        @media (max-width: 700px) { .stat-grid { grid-template-columns: 1fr 1fr; } }
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 100%; } .stat-grid-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        @media (max-width: 700px) { .stat-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; } .chart-tab { padding: 5px 10px !important; font-size: 11px !important; white-space: nowrap; } }
         .delete-btn { background: none; border: none; cursor: pointer; color: #e2e8f0; font-size: 14px; padding: 4px 8px; border-radius: 6px; transition: all 0.15s; }
         .delete-btn:hover { background: #fee2e2; color: #e53e3e; }
       `}</style>
@@ -364,7 +364,7 @@ export default function VitalsPage() {
                   <div style={{ fontSize: "11px", fontWeight: "700", color: "#999", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "10px" }}>
                     Latest readings · {fDateTime(latest.recorded_at)}
                   </div>
-                  <div className="stat-grid">
+                  <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}><div className="stat-grid" style={{ minWidth: "300px" }}>
                     <VitalCard label="BP Systolic"    value={latest.bp_systolic}   unit="mmHg" statusKey="bp_systolic" />
                     <VitalCard label="BP Diastolic"   value={latest.bp_diastolic}  unit="mmHg" statusKey="bp_diastolic" />
                     <VitalCard label="Sugar (Fasting)" value={latest.sugar_fasting} unit="mg/dL" statusKey="sugar_fasting" />
@@ -382,7 +382,7 @@ export default function VitalsPage() {
                 <div style={{ background: "white", borderRadius: "14px", padding: "20px", marginBottom: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", flexWrap: "wrap", gap: "8px" }}>
                     <div style={{ fontWeight: "700", color: "#0f4c81", fontSize: "15px" }}>Trend Charts</div>
-                    <div style={{ display: "flex", gap: "6px" }}>
+                    <div style={{ display: "flex", gap: "6px", overflowX: "auto", flexWrap: "nowrap" }}>
                       {(["bp", "sugar", "weight", "other"] as const).map(tab => (
                         <button key={tab} className="chart-tab"
                           onClick={() => setActiveChart(tab)}
