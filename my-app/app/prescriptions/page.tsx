@@ -4291,10 +4291,47 @@ function PrescriptionsPageInner() {
                   <td style={{ padding:"12px 16px", fontSize:"12px", color:"#999", maxWidth:"160px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.notes||"—"}</td>
                   <td style={{ padding:"12px 16px", fontSize:"12px", color:"#888" }}>{(p.created_at||"").split("T")[0]}</td>
                   <td style={{ padding:"12px 16px" }}>
-                    <div style={{ display:"flex", gap:"6px" }}>
-                      <button className="action-btn view-btn-sm" onClick={()=>setViewPrescription(p)}>👁 View</button>
-                      <button className="action-btn print-btn-sm" onClick={()=>handlePrint(p)}>🖨 Print</button>
-                      <button className="action-btn del-btn-sm" onClick={()=>deletePrescription(p.id)}>✕</button>
+                      <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
+                        <button className="action-btn view-btn-sm" onClick={()=>setViewPrescription(p)}>👁 View</button>
+                        <button className="action-btn print-btn-sm" onClick={()=>handlePrint(p)}>🖨 Print</button>
+                        <button className="action-btn" onClick={()=>{
+                          const name = p.patients?.name || patients.find((pat:any)=>pat.id===p.patient_id)?.name || "Patient";
+                          const phone = patients.find((pat:any)=>pat.id===p.patient_id)?.phone || "";
+                          const meds = (p.medicine||"").split("\n");
+                          const dosages = (p.dosage||"").split("\n");
+                          const durations = (p.duration||"").split("\n");
+                          const date = (p.created_at||"").split("T")[0];
+                          let msg = `🏥 *${hospitalConfig.name}*\n`;
+                          msg += `👨‍⚕️ ${hospitalConfig.doctorName} (${hospitalConfig.doctorDegree})\n`;
+                          msg += `📅 Date: ${date}\n`;
+                          msg += `━━━━━━━━━━━━━━━━\n`;
+                          msg += `👤 *Patient:* ${name}\n`;
+                          if (p.diagnosis) msg += `🩺 *Diagnosis:* ${p.diagnosis}\n`;
+                          msg += `\n💊 *Medicines:*\n`;
+                          meds.forEach((m:string, i:number) => {
+                            if (!m.trim()) return;
+                            msg += `${i+1}. *${m}*\n`;
+                            if (dosages[i]) msg += `   • Dosage: ${dosages[i]}\n`;
+                            if (durations[i]) msg += `   • Duration: ${durations[i]}\n`;
+                          });
+                          if (p.notes) msg += `\n📋 *Instructions:* ${p.notes}\n`;
+                          try {
+                            const fuList = JSON.parse(localStorage.getItem("clinic_followups")||"[]");
+                            const fu = fuList.find((f:any)=>f.patientId===p.patient_id);
+                            if (fu?.dueDate) msg += `\n📅 *Follow-up:* ${fu.dueDate}\n`;
+                          } catch {}
+                          msg += `\n━━━━━━━━━━━━━━━━\n`;
+                          msg += `_${hospitalConfig.name} · ${hospitalConfig.phone}_`;
+                          const encoded = encodeURIComponent(msg);
+                          const waUrl = phone
+                            ? `whatsapp://send?phone=91${phone.replace(/\D/g,"")}&text=${encoded}`
+                            : `whatsapp://send?text=${encoded}`;
+                          window.location.href = waUrl;
+                        }} style={{ background:"#25D366", color:"white", border:"none", padding:"6px 12px", borderRadius:"7px", fontSize:"12px", fontWeight:"700", cursor:"pointer", fontFamily:"inherit" }}>
+                          📲 WA
+                        </button>
+                        <button className="action-btn del-btn-sm" onClick={()=>deletePrescription(p.id)}>✕</button>
+                      </div>
                     </div>
                   </td>
                 </tr>
