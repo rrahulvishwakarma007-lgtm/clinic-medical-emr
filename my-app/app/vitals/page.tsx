@@ -255,7 +255,7 @@ export default function VitalsPage() {
   }
 
   return (
-    <div style={{ padding: "2rem", minHeight: "100vh", background: "#f0f4f8", fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ padding: "1rem", minHeight: "100vh", background: "#f0f4f8", fontFamily: "'DM Sans', sans-serif" }}>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" />
       <style>{`
         input:focus, select:focus, textarea:focus { outline: none !important; border-color: #0f4c81 !important; box-shadow: 0 0 0 3px rgba(15,76,129,0.1) !important; }
@@ -267,7 +267,7 @@ export default function VitalsPage() {
         @media (max-width: 600px) { .vital-form-grid { grid-template-columns: 1fr; } }
         .modal-anim { animation: slideUp 0.2s ease; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 100%; }
         @media (max-width: 700px) { .stat-grid { grid-template-columns: 1fr 1fr; } }
         .delete-btn { background: none; border: none; cursor: pointer; color: #e2e8f0; font-size: 14px; padding: 4px 8px; border-radius: 6px; transition: all 0.15s; }
         .delete-btn:hover { background: #fee2e2; color: #e53e3e; }
@@ -292,7 +292,7 @@ export default function VitalsPage() {
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", flexWrap: "wrap", gap: "20px", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px", alignItems: "start" }}>
 
         {/* ── Left panel: patient list ── */}
         <div style={{ background: "white", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
@@ -397,7 +397,7 @@ export default function VitalsPage() {
                     </div>
                   </div>
 
-                  <ResponsiveContainer width="99%" height={220}>
+                  <ResponsiveContainer width="100%" height={200}>
                     <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" />
                       <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#999" }} />
