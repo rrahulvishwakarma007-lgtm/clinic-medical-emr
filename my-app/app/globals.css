@@ -902,3 +902,43 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     gap: 8px !important;
   }
 }
+/* REMOVE the bad nth-child hide rule and replace */
+@media (max-width: 768px) {
+
+  /* UN-hide first column (we wrongly hid it) */
+  table th:nth-child(1),
+  table td:nth-child(1) {
+    display: table-cell !important;
+  }
+
+  /* Hide LAST column (actions) to save space — or hide blood group */
+  table th:last-child,
+  table td:last-child {
+    display: none !important;
+  }
+
+  /* Hide blood group column (usually 4th) */
+  table th:nth-child(4),
+  table td:nth-child(4) {
+    display: none !important;
+  }
+
+  /* Table must scroll horizontally */
+  .section-card,
+  div[style*="border-radius: 14px"],
+  div[style*="borderRadius: 14px"] {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  table {
+    min-width: 480px !important;
+    width: 480px !important;
+  }
+
+  table td, table th {
+    padding: 10px 8px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+}
