@@ -4332,7 +4332,6 @@ function PrescriptionsPageInner() {
                         </button>
                         <button className="action-btn del-btn-sm" onClick={()=>deletePrescription(p.id)}>✕</button>
                       </div>
-                    </div>
                   </td>
                 </tr>
               );
