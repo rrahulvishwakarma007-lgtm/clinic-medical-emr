@@ -1029,3 +1029,40 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     box-sizing: border-box !important;
   }
 }
+/* VITALS - PREVENT RIGHT CUTOFF */
+@media (max-width: 768px) {
+
+  /* Root container */
+  div[style*="minHeight: \"100vh\""][style*="background: \"#f0f4f8\""] {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    padding: 12px !important;
+  }
+
+  /* Patient banner - no overflow */
+  div[style*="linear-gradient(135deg, #0f4c81, #1a6bb5)"][style*="borderRadius: \"14px\""] {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* All cards full width */
+  div[style*="borderRadius: \"14px\""] {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Stat grid - 2 col full width */
+  .stat-grid {
+    grid-template-columns: 1fr 1fr !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Each vital card */
+  .stat-grid > div {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+}
