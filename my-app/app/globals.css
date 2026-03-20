@@ -942,3 +942,45 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     white-space: nowrap !important;
   }
 }
+/* ═══════════════════════════════════════
+   VITALS PAGE MOBILE FIXES
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Vital cards grid - full width, no cutoff */
+  .vitals-grid,
+  div[style*="repeat(2"] {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    padding: 0 !important;
+  }
+
+  /* Vital card padding compact */
+  div[style*="borderRadius: \"12px\""],
+  div[style*="border-radius: 12px"] {
+    padding: 12px !important;
+  }
+
+  /* Page padding */
+  div[style*="padding: \"2rem\""],
+  div[style*="padding: 2rem"] {
+    padding: 12px 1rem !important;
+  }
+
+  /* Charts - full width */
+  div[style*="recharts"],
+  .recharts-wrapper {
+    width: 100% !important;
+  }
+
+  /* Record Vitals button - full width */
+  div[style*="justifyContent: \"space-between\""] > button {
+    font-size: 12px !important;
+    padding: 8px 14px !important;
+  }
+
+  /* Trend charts section */
+  div[style*="gridTemplateColumns: \"1fr 1fr\""] {
+    grid-template-columns: 1fr !important;
+  }
+}
