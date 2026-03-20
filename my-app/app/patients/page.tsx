@@ -356,8 +356,8 @@ export default function PatientsPage() {
 
         {/* ── TABLE VIEW ── */}
         {viewMode === "table" && (
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e8edf2", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e8edf2", overflowX: "auto", boxShadow: "var(--shadow-sm)" }}>
+            <table style={{ width: "100%", minWidth: "700px", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#f8fafc", borderBottom: "1.5px solid #e8edf2" }}>
                   {["Patient", "Age & DOB", "Contact", "Blood", "Allergies", "Type", "Status", ""].map(h => (
