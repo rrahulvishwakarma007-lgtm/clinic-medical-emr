@@ -806,3 +806,39 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     padding: 4px 10px !important;
   }
 }
+/* DASHBOARD HEADER + STATS FIX */
+@media (max-width: 768px) {
+
+  /* Fix Register Patient button overlap */
+  .register-btn {
+    position: static !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+    justify-content: center !important;
+  }
+
+  /* Glass header — stack logo and button */
+  .glass-header > div {
+    flex-wrap: wrap !important;
+    height: auto !important;
+    padding: 12px 0 !important;
+    gap: 8px !important;
+  }
+
+  /* Stats — force 2 columns */
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Stat card compact */
+  .stat-card {
+    padding: 12px !important;
+  }
+
+  /* Stat number smaller */
+  .stat-card div[style*="font-size: 36px"],
+  .stat-card div[style*="fontSize: 36px"] {
+    font-size: 28px !important;
+  }
+}
