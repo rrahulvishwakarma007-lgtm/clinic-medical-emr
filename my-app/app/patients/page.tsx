@@ -282,7 +282,7 @@ export default function PatientsPage() {
         </div>
 
         {/* ── Stats Row ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "10px", marginBottom: "20px" }}>
+        <div style={{ display: "flex", gap: "10px", overflowX: "auto", flexWrap: "nowrap", paddingBottom: "4px", marginBottom: "20px" }}>
           {[
             { label: "Total Patients", value: stats.total, icon: "👥", color: "#0f4c81", bg: "#e8f0fe" },
             { label: "General", value: stats.general, icon: "🏥", color: "#1d4ed8", bg: "#eff6ff" },
