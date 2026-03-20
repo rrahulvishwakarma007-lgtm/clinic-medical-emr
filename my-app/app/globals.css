@@ -842,3 +842,63 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     font-size: 28px !important;
   }
 }
+/* ═══════════════════════════════════════
+   PATIENTS PAGE MOBILE FIXES
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Stats row — scrollable horizontally */
+  .pat-stats-row {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /* Patient table — scrollable */
+  .pat-table-wrap,
+  div[style*="overflowX: auto"],
+  div[style*="overflow-x: auto"] {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Force table min width so it scrolls */
+  .patients-table,
+  table {
+    min-width: 600px !important;
+    width: 600px !important;
+  }
+
+  /* Hide ID column on mobile to save space */
+  table th:nth-child(1),
+  table td:nth-child(1) {
+    display: none !important;
+  }
+
+  /* Smaller cell padding */
+  table td, table th {
+    padding: 10px 8px !important;
+    font-size: 12px !important;
+  }
+
+  /* Hero section compact */
+  .hero-banner {
+    padding: 16px 1rem !important;
+  }
+
+  .hero-banner h1 {
+    font-size: 24px !important;
+  }
+
+  /* Filter chips — wrap nicely */
+  .filter-chips {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  /* Sort + view toggle row */
+  .toolbar-row {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+}
