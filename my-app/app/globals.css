@@ -700,3 +700,109 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     font-size: 10px !important;
   }
 }
+/* ═══════════════════════════════════════
+   DASHBOARD MOBILE FIXES
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Sub-header — stack vertically */
+  div[style*="justifyContent: space-between"][style*="borderBottom"] {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    padding: 10px 1rem !important;
+  }
+
+  /* Stat cards — 2 column, compact */
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .stat-card {
+    padding: 14px !important;
+  }
+
+  .stat-card svg {
+    display: none !important;
+  }
+
+  .stat-card > div:first-child {
+    margin-bottom: 8px !important;
+  }
+
+  /* Quick actions — 2 column */
+  .qa-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .quick-action {
+    padding: 12px !important;
+    font-size: 12px !important;
+  }
+
+  .quick-action .qa-icon {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 16px !important;
+  }
+
+  /* Main grid — single column */
+  .main-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Section header — wrap */
+  .section-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+  }
+
+  /* Tab buttons — smaller */
+  .tab-btn {
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+  }
+
+  /* Appointments table scroll */
+  .section-card div[style*="overflowX"] {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .section-card table {
+    min-width: 480px !important;
+  }
+
+  /* Today summary — compact */
+  .section-card div[style*="padding: 16px"] > div {
+    padding: 8px 10px !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* Hero banner padding */
+  .dash-root {
+    padding: 12px 1rem !important;
+  }
+
+  /* Footer — stack */
+  .dash-root > div:last-child {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  /* Register button — full width on mobile */
+  .register-btn {
+    font-size: 12px !important;
+    padding: 8px 12px !important;
+  }
+
+  /* Time display — smaller */
+  .time-display {
+    font-size: 12px !important;
+    padding: 4px 10px !important;
+  }
+}
