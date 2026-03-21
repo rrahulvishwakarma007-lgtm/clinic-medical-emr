@@ -375,22 +375,85 @@ export default function RevenueDashboard() {
   const RANGE_LABELS: Record<DateRange, string> = { today: "Today", week: "Last 7 days", month: "Last 30 days", quarter: "Last 90 days", year: "Last 365 days", custom: "Custom" };
 
   return (
-    <div style={{ padding: "2rem", minHeight: "100vh", background: "#f0f4f8", fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="rev-page" style={{ padding: "2rem", minHeight: "100vh", background: "#f0f4f8", fontFamily: "'DM Sans', sans-serif", maxWidth: "100%", boxSizing: "border-box" }}>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" />
       <style>{`
+        *,*::before,*::after{box-sizing:border-box}
         .stat-card{background:white;border-radius:14px;padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,0.06);transition:transform 0.15s}
         .stat-card:hover{transform:translateY(-2px)}
         .hover-row:hover td{background:#f0f7ff!important}
-        .tab-btn{border:none;cursor:pointer;padding:9px 20px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;transition:all 0.15s}
-        .range-btn{border:1.5px solid #e2e8f0;background:white;cursor:pointer;padding:6px 14px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;transition:all 0.15s;color:#555}
+        .tab-btn{border:none;cursor:pointer;padding:9px 20px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;transition:all 0.15s;white-space:nowrap}
+        .range-btn{border:1.5px solid #e2e8f0;background:white;cursor:pointer;padding:6px 14px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;transition:all 0.15s;color:#555;white-space:nowrap}
         .range-btn:hover{border-color:#0f4c81;color:#0f4c81}
         .range-btn.active{background:#0f4c81;color:white;border-color:#0f4c81}
         @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         .fade-in{animation:fadeIn 0.25s ease}
+
+        /* ── Tabs row scrollable ── */
+        .rev-tabs-row{display:flex;gap:4px;margin-bottom:18px;background:white;padding:4px;border-radius:11px;width:fit-content;box-shadow:0 1px 4px rgba(0,0,0,0.06);overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+
+        /* ── Transactions table scroll ── */
+        .rev-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
+        .rev-table-wrap table{min-width:780px;width:100%;border-collapse:collapse}
+        .rev-table-wrap table th,.rev-table-wrap table td{display:table-cell!important;white-space:nowrap!important;max-width:unset!important;overflow:visible!important;text-overflow:unset!important}
+        .rev-table-wrap table th:last-child,.rev-table-wrap table td:last-child{display:table-cell!important}
+        .rev-table-wrap table th:nth-child(4),.rev-table-wrap table td:nth-child(4){display:table-cell!important}
+
+        /* ── Top patients table scroll ── */
+        .rev-patients-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+        .rev-patients-wrap table{min-width:500px;width:100%;border-collapse:collapse}
+        .rev-patients-wrap table th,.rev-patients-wrap table td{display:table-cell!important;white-space:nowrap!important;max-width:unset!important}
+
+        /* ── MOBILE ── */
+        @media(max-width:768px){
+          /* Page padding */
+          .rev-page{padding:1rem!important}
+
+          /* Header stack */
+          .rev-header{flex-direction:column!important;align-items:stretch!important;gap:10px!important}
+          .rev-header>div:last-child{width:100%!important}
+          .rev-header button{width:100%!important;justify-content:center!important}
+
+          /* Date range — scroll */
+          .rev-range-row{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;flex-wrap:nowrap!important;padding-bottom:4px!important}
+          .rev-range-row span:first-child{flex-shrink:0!important}
+
+          /* KPI grid — 2 col */
+          .rev-kpi-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
+          .stat-card{padding:14px 16px!important}
+          .stat-card div[style*="font-size: 24px"]{font-size:18px!important}
+
+          /* Chart padding compact */
+          .rev-chart-card{padding:14px 16px!important}
+
+          /* Tabs row — scroll */
+          .rev-tabs-row{width:100%!important}
+
+          /* Overview grid — single col */
+          .rev-overview-grid{grid-template-columns:1fr!important}
+          .rev-overview-grid .stat-card[style*="gridColumn"]{grid-column:auto!important}
+
+          /* Breakdown grid — single col */
+          .rev-breakdown-grid{grid-template-columns:1fr!important}
+          .rev-breakdown-grid .stat-card[style*="gridColumn"]{grid-column:auto!important}
+
+          /* Transaction filters stack */
+          .rev-filters{flex-direction:column!important;align-items:stretch!important}
+          .rev-filters select{width:100%!important}
+
+          /* Table cells compact */
+          .rev-table-wrap table th,.rev-table-wrap table td{padding:8px 10px!important;font-size:11px!important}
+        }
+
+        /* ── DESKTOP ── */
+        @media(min-width:1024px){
+          .rev-page{padding:2.5rem 3rem!important}
+          .rev-kpi-grid{grid-template-columns:repeat(6,1fr)!important}
+        }
       `}</style>
 
       {/* ── Page Header ───────────────────────────── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div className="rev-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
         <div>
           <h1 style={{ fontFamily: "'DM Serif Display',serif", fontSize: "28px", color: "#0f4c81", margin: 0 }}>Revenue Dashboard</h1>
           <p style={{ color: "#888", fontSize: "13px", marginTop: "4px" }}>
@@ -405,7 +468,7 @@ export default function RevenueDashboard() {
       </div>
 
       {/* ── Date Range Selector ────────────────────── */}
-      <div style={{ background: "white", borderRadius: "12px", padding: "14px 18px", marginBottom: "22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+      <div className="rev-range-row" style={{ background: "white", borderRadius: "12px", padding: "14px 18px", marginBottom: "22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ fontSize: "12px", fontWeight: "700", color: "#888", textTransform: "uppercase", letterSpacing: "1px", marginRight: "4px" }}>Range:</span>
         {(["today", "week", "month", "quarter", "year", "custom"] as DateRange[]).map(r => (
           <button key={r} className={`range-btn${range === r ? " active" : ""}`} onClick={() => setRange(r)}>
@@ -422,7 +485,7 @@ export default function RevenueDashboard() {
       </div>
 
       {/* ── KPI Cards ─────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px", marginBottom: "22px" }}>
+      <div className="rev-kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px", marginBottom: "22px" }}>
         {[
           {
             label: "Total Collected", value: rupee(totalRevenue), sub: <Trend pct={revTrend} />,
@@ -461,7 +524,7 @@ export default function RevenueDashboard() {
       </div>
 
       {/* ── Revenue Chart ─────────────────────────── */}
-      <div style={{ background: "white", borderRadius: "14px", padding: "22px 24px", marginBottom: "22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+      <div className="rev-chart-card" style={{ background: "white", borderRadius: "14px", padding: "22px 24px", marginBottom: "22px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", flexWrap: "wrap", gap: "10px" }}>
           <div>
             <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: "18px", color: "#0f4c81" }}>Revenue Trend</div>
@@ -486,7 +549,7 @@ export default function RevenueDashboard() {
       </div>
 
       {/* ── Tabs ──────────────────────────────────── */}
-      <div style={{ display: "flex", gap: "4px", marginBottom: "18px", background: "white", padding: "4px", borderRadius: "11px", width: "fit-content", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+      <div className="rev-tabs-row">
         {([
           { key: "overview", label: "📊 Overview" },
           { key: "breakdown", label: "🔍 Breakdown" },
@@ -501,7 +564,7 @@ export default function RevenueDashboard() {
 
       {/* ── Overview Tab ──────────────────────────── */}
       {activeView === "overview" && (
-        <div className="fade-in" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+        <div className="fade-in rev-overview-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
 
           {/* Collection rate donut */}
           <div className="stat-card" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -571,7 +634,7 @@ export default function RevenueDashboard() {
           {/* Top patients — full width */}
           <div className="stat-card" style={{ gridColumn: "1 / -1" }}>
             <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: "16px", color: "#0f4c81", marginBottom: "16px" }}>Top Patients by Revenue</div>
-            <div style={{ overflowX: "auto" }}>
+            <div className="rev-patients-wrap" style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
@@ -614,7 +677,7 @@ export default function RevenueDashboard() {
 
       {/* ── Breakdown Tab ─────────────────────────── */}
       {activeView === "breakdown" && (
-        <div className="fade-in" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        <div className="fade-in rev-breakdown-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
           {/* Service revenue breakdown */}
           <div className="stat-card" style={{ gridColumn: "1 / -1" }}>
@@ -708,7 +771,7 @@ export default function RevenueDashboard() {
       {activeView === "transactions" && (
         <div className="fade-in">
           {/* Filters */}
-          <div style={{ display: "flex", gap: "10px", marginBottom: "14px", flexWrap: "wrap", alignItems: "center" }}>
+          <div className="rev-filters" style={{ display: "flex", gap: "10px", marginBottom: "14px", flexWrap: "wrap", alignItems: "center" }}>
             <select value={methodFilter} onChange={e => setMethodFilter(e.target.value)} style={inputStyle}>
               <option value="All">All Methods</option>
               {["Cash", "UPI / GPay", "Card", "Insurance", "Cheque"].map(m => <option key={m}>{m}</option>)}
@@ -721,6 +784,7 @@ export default function RevenueDashboard() {
           </div>
 
           <div style={{ background: "white", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <div className="rev-table-wrap">
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#0f4c81" }}>
@@ -764,6 +828,7 @@ export default function RevenueDashboard() {
                 })}
               </tbody>
             </table>
+            </div>
             {transactions.length > 100 && (
               <div style={{ padding: "14px", textAlign: "center", fontSize: "12px", color: "#aaa", borderTop: "1px solid #f0f0f0" }}>
                 Showing 100 of {transactions.length} — export CSV for full data
