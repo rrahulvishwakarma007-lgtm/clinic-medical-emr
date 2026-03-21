@@ -520,16 +520,92 @@ export default function Dashboard() {
           letter-spacing: 0.5px;
         }
 
+        /* ── Appointment table scroll ── */
+        .appt-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+        .appt-table-wrap table { min-width: 520px; width: 100%; border-collapse: collapse; }
+        .appt-table-wrap table th,
+        .appt-table-wrap table td { display: table-cell !important; white-space: nowrap !important; max-width: unset !important; overflow: visible !important; }
+        .appt-table-wrap table th:last-child,
+        .appt-table-wrap table td:last-child { display: table-cell !important; }
+        .appt-table-wrap table th:nth-child(4),
+        .appt-table-wrap table td:nth-child(4) { display: table-cell !important; }
+
+        /* ── Tablet ── */
         @media (max-width: 1200px) {
           .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .main-grid { grid-template-columns: 1fr !important; }
           .qa-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
+
+        /* ── MOBILE ── */
+        @media (max-width: 768px) {
+
+          /* Nav header — compact */
+          .glass-header { padding: 0 1rem !important; }
+          .dash-nav-row { height: auto !important; flex-wrap: wrap !important; gap: 8px !important; padding: 10px 0 !important; }
+
+          /* Hide text labels on nav, keep icons */
+          .nav-btn { padding: 7px 10px !important; font-size: 12px !important; }
+
+          /* Search + register btn — stack below nav */
+          .dash-right-row { width: 100% !important; justify-content: space-between !important; }
+          .search-input-hdr { width: 160px !important; font-size: 12px !important; }
+          .search-input-hdr:focus { width: 180px !important; }
+          .register-btn { padding: 7px 12px !important; font-size: 12px !important; }
+
+          /* Sub-header — stack */
+          .dash-subheader { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; padding: 10px 1rem !important; }
+          .dash-subheader-left { flex-wrap: wrap !important; gap: 8px !important; }
+
+          /* Main content padding */
+          .dash-root { padding: 14px 1rem !important; }
+
+          /* Stat cards — 2 col */
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+          .stat-card { padding: 16px !important; }
+          .stat-card svg { display: none !important; } /* hide sparkline on mobile */
+
+          /* Quick actions — 2 col */
+          .qa-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+          .quick-action { padding: 10px 12px !important; font-size: 12px !important; }
+          .quick-action .qa-icon { width: 30px !important; height: 30px !important; font-size: 15px !important; }
+
+          /* Main grid — single col */
+          .main-grid { grid-template-columns: 1fr !important; }
+
+          /* Patients grid — single col */
+          .patients-grid { grid-template-columns: 1fr !important; }
+
+          /* Section header — wrap */
+          .section-header { flex-wrap: wrap !important; gap: 8px !important; }
+
+          /* Footer — stack */
+          .dash-footer { flex-direction: column !important; gap: 10px !important; }
+          .dash-footer-metrics { flex-wrap: wrap !important; gap: 12px !important; }
+
+          /* Modal — bottom sheet */
+          .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+          .modal-box { width: 100% !important; max-width: 100% !important; border-radius: 20px 20px 0 0 !important; max-height: 95vh !important; }
+
+          /* Modal form grid — single col */
+          .modal-form-grid { grid-template-columns: 1fr !important; }
+
+          /* Overdue banner */
+          .overdue-banner { flex-direction: column !important; }
+        }
+
+        /* ── DESKTOP ENHANCEMENTS ── */
+        @media (min-width: 1400px) {
+          .dash-root { padding: 28px 3rem !important; }
+          .stats-grid { grid-template-columns: repeat(4, 1fr) !important; }
+          .qa-grid { grid-template-columns: repeat(4, 1fr) !important; }
+          .main-grid { grid-template-columns: 1.6fr 1fr !important; }
+        }
       `}</style>
 
       {/* ── Top Navigation Header ─────────────────────────────────────────── */}
       <div className="glass-header" style={{ padding: "0 2rem" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: "64px" }}>
+        <div className="dash-nav-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: "64px" }}>
           {/* Logo + title */}
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
             <div style={{
@@ -563,7 +639,7 @@ export default function Dashboard() {
           </nav>
 
           {/* Right side */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div className="dash-right-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div className="search-wrap" ref={searchRef}>
               <span className="search-icon">🔍</span>
               <input
@@ -615,12 +691,12 @@ export default function Dashboard() {
       </div>
 
       {/* ── Sub-header: Doctor info + time ───────────────────────────────── */}
-      <div style={{
+      <div className="dash-subheader" style={{
         background: "white", borderBottom: "1px solid #e8edf2",
         padding: "12px 2rem",
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+        <div className="dash-subheader-left" style={{ display: "flex", alignItems: "center", gap: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <div className="live-dot" />
             <span style={{ fontSize: "12px", color: "#059669", fontWeight: "600" }}>System Online</span>
@@ -747,7 +823,7 @@ export default function Dashboard() {
 
             {/* Schedule Tab */}
             {activeTab === "schedule" && (
-              <div style={{ overflowX: "auto" }}>
+              <div className="appt-table-wrap" style={{ overflowX: "auto" }}>
                 {todaysList.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "48px 20px", color: "#b0bec5" }}>
                     <div style={{ fontSize: "40px", marginBottom: "10px" }}>📭</div>
@@ -820,7 +896,7 @@ export default function Dashboard() {
                     <div style={{ fontSize: "13px" }}>{searchQuery ? "No patients match your search" : "No patients found"}</div>
                   </div>
                 ) : (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                  <div className="patients-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
                     {filteredPatients.map(p => {
                       const colors = ["#e8f0fe:#1e40af", "#d1fae5:#065f46", "#ede9fe:#6d28d9", "#fef3c7:#92400e"];
                       const [bg, fg] = colors[p.name?.charCodeAt(0) % 4].split(":");
@@ -896,11 +972,11 @@ export default function Dashboard() {
         </div>
 
         {/* ── Footer Info ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderTop: "1px solid #e8edf2" }}>
+        <div className="dash-footer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderTop: "1px solid #e8edf2" }}>
           <div style={{ fontSize: "11px", color: "#b0bec5" }}>
             {hospitalConfig.dashboardTitle} · Clinic EMR v2.0
           </div>
-          <div style={{ display: "flex", gap: "16px" }}>
+          <div className="dash-footer-metrics" style={{ display: "flex", gap: "16px" }}>
             {[
               { label: "Total Records", value: stats.totalPatients },
               { label: "Today's Load", value: stats.todaysAppointments },
@@ -944,7 +1020,7 @@ export default function Dashboard() {
                 )}
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div className="modal-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                 <input placeholder="Phone Number *" style={inp} value={newPatient.phone} onChange={e => setNewPatient({ ...newPatient, phone: e.target.value })} />
                 <select style={inp} value={newPatient.blood_group} onChange={e => setNewPatient({ ...newPatient, blood_group: e.target.value })}>
                   <option value="">Blood Group</option>
