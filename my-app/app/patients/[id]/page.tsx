@@ -93,9 +93,12 @@ export default function PatientProfile() {
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700;800&display=swap');
         *,*::before,*::after{box-sizing:border-box}
         ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#0a1525}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:10px}
+
+        /* ── HERO ── */
         .hero-banner{background:linear-gradient(135deg,#060d1a 0%,#0a1830 40%,#0d2040 100%);border-bottom:1px solid #0e2040;padding:32px 40px 0;position:relative;overflow:hidden}
         .hero-banner::before{content:'';position:absolute;top:-80px;right:-80px;width:360px;height:360px;background:radial-gradient(circle,rgba(59,130,246,0.07) 0%,transparent 70%);pointer-events:none}
         .hero-banner::after{content:'';position:absolute;bottom:0;left:200px;width:200px;height:200px;background:radial-gradient(circle,rgba(16,185,129,0.04) 0%,transparent 70%);pointer-events:none}
+
         .pat-avatar{width:80px;height:80px;background:linear-gradient(135deg,#1d4ed8 0%,#1e40af 100%);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:white;letter-spacing:-1px;box-shadow:0 0 0 1px rgba(59,130,246,0.3),0 8px 32px rgba(29,78,216,0.3);flex-shrink:0;font-family:'Instrument Serif',serif}
         .status-dot{width:9px;height:9px;background:#10b981;border-radius:50%;box-shadow:0 0 0 3px rgba(16,185,129,0.2);animation:pg 2s ease-in-out infinite;flex-shrink:0}
         @keyframes pg{0%,100%{box-shadow:0 0 0 3px rgba(16,185,129,0.2)}50%{box-shadow:0 0 0 6px rgba(16,185,129,0.1)}}
@@ -103,28 +106,36 @@ export default function PatientProfile() {
         .hero-stat:hover{background:rgba(59,130,246,0.06);border-color:rgba(59,130,246,0.2)}
         .blood-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#f87171;padding:4px 12px;border-radius:8px;font-size:13px;font-weight:700}
         .type-badge{display:inline-flex;align-items:center;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);color:#93c5fd;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600}
-        .btn-edit{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#cbd5e1;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Outfit',sans-serif}
+
+        /* ── BUTTONS ── */
+        .btn-edit{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#cbd5e1;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Outfit',sans-serif;white-space:nowrap}
         .btn-edit:hover{background:rgba(255,255,255,0.1);color:#f1f5f9;border-color:rgba(255,255,255,0.2)}
-        .btn-back{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.08);color:#64748b;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Outfit',sans-serif}
+        .btn-back{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.08);color:#64748b;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Outfit',sans-serif;white-space:nowrap}
         .btn-back:hover{color:#94a3b8;border-color:rgba(255,255,255,0.15)}
-        .btn-rx{display:inline-flex;align-items:center;gap:7px;padding:10px 22px;border-radius:10px;background:linear-gradient(135deg,#1d4ed8,#1e40af);border:1px solid rgba(59,130,246,0.3);color:white;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Outfit',sans-serif;box-shadow:0 4px 16px rgba(29,78,216,0.3)}
+        .btn-rx{display:inline-flex;align-items:center;gap:7px;padding:10px 22px;border-radius:10px;background:linear-gradient(135deg,#1d4ed8,#1e40af);border:1px solid rgba(59,130,246,0.3);color:white;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Outfit',sans-serif;box-shadow:0 4px 16px rgba(29,78,216,0.3);white-space:nowrap}
         .btn-rx:hover{background:linear-gradient(135deg,#2563eb,#1d4ed8);transform:translateY(-1px);box-shadow:0 6px 20px rgba(29,78,216,0.4)}
-        .tabs-wrap{display:flex;gap:2px;padding:0 40px;border-top:1px solid rgba(255,255,255,0.04);background:rgba(0,0,0,0.2);margin:0 -40px}
-        .tab-btn{padding:16px 22px;background:none;border:none;color:#4a6fa5;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;border-bottom:2px solid transparent;display:flex;align-items:center;gap:7px;font-family:'Outfit',sans-serif;white-space:nowrap}
+
+        /* ── TABS ── */
+        .tabs-wrap{display:flex;gap:2px;padding:0 40px;border-top:1px solid rgba(255,255,255,0.04);background:rgba(0,0,0,0.2);margin:0 -40px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+        .tab-btn{padding:16px 22px;background:none;border:none;color:#4a6fa5;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;border-bottom:2px solid transparent;display:flex;align-items:center;gap:7px;font-family:'Outfit',sans-serif;white-space:nowrap;flex-shrink:0}
         .tab-btn:hover{color:#94a3b8}
         .tab-btn.active{color:#e2e8f0;border-bottom-color:#3b82f6}
         .tab-badge{background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.2);color:#93c5fd;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px}
         .tab-badge.active{background:rgba(59,130,246,0.25)}
+
+        /* ── LAYOUT ── */
         .content-area{padding:28px 40px;max-width:1200px}
         .sect-card{background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden}
-        .sect-card-head{padding:18px 22px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between}
+        .sect-card-head{padding:18px 22px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
         .sect-card-title{font-family:'Instrument Serif',serif;font-size:17px;color:#f0f6ff;display:flex;align-items:center;gap:10px}
-        .sect-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+        .sect-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
         .sect-card-body{padding:22px}
         .info-item{padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
         .info-item:last-child{border-bottom:none;padding-bottom:0}
         .info-lbl{font-size:11px;color:#4a6fa5;font-weight:600;text-transform:uppercase;letter-spacing:1px;padding-top:2px;flex-shrink:0}
-        .info-val{font-size:14px;color:#cbd5e1;font-weight:500;text-align:right}
+        .info-val{font-size:14px;color:#cbd5e1;font-weight:500;text-align:right;word-break:break-word}
+
+        /* ── PRESCRIPTIONS TIMELINE ── */
         .rx-timeline-item{position:relative;padding:0 0 24px 24px;border-left:1px solid rgba(255,255,255,0.06);transition:all 0.2s;cursor:pointer}
         .rx-timeline-item:last-child{padding-bottom:0;border-left-color:transparent}
         .rx-timeline-dot{position:absolute;left:-5px;top:6px;width:10px;height:10px;border-radius:50%;background:#1e3a5f;border:2px solid #3b82f6;transition:all 0.2s}
@@ -132,14 +143,16 @@ export default function PatientProfile() {
         .rx-card{background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px 20px;transition:all 0.2s}
         .rx-card:hover{background:rgba(59,130,246,0.04);border-color:rgba(59,130,246,0.15)}
         .rx-card.expanded{border-color:rgba(59,130,246,0.25);background:rgba(59,130,246,0.05)}
-        .rx-date-badge{font-size:11px;color:#4a6fa5;font-weight:600;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);padding:3px 10px;border-radius:6px}
-        .med-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(29,78,216,0.1);border:1px solid rgba(29,78,216,0.2);color:#93c5fd;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600}
+        .rx-date-badge{font-size:11px;color:#4a6fa5;font-weight:600;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);padding:3px 10px;border-radius:6px;white-space:nowrap}
+        .med-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(29,78,216,0.1);border:1px solid rgba(29,78,216,0.2);color:#93c5fd;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .rx-detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05)}
         .rx-detail-box{background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:12px}
         .rx-detail-lbl{font-size:10px;color:#4a6fa5;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:5px}
-        .rx-detail-val{font-size:13px;color:#cbd5e1;font-weight:600}
-        .btn-print-rx{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Outfit',sans-serif;white-space:nowrap}
+        .rx-detail-val{font-size:13px;color:#cbd5e1;font-weight:600;word-break:break-word}
+        .btn-print-rx{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Outfit',sans-serif;white-space:nowrap;flex-shrink:0}
         .btn-print-rx:hover{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:#93c5fd}
+
+        /* ── FORM ── */
         .form-label{font-size:11px;font-weight:700;color:#4a6fa5;text-transform:uppercase;letter-spacing:1.2px;display:block;margin-bottom:7px}
         .form-input{width:100%;padding:11px 14px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.08);border-radius:10px;color:#e2e8f0;font-size:14px;font-family:'Outfit',sans-serif;transition:all 0.2s;outline:none}
         .form-input:focus{border-color:#3b82f6;background:rgba(59,130,246,0.06);box-shadow:0 0 0 3px rgba(59,130,246,0.12)}
@@ -161,6 +174,8 @@ export default function PatientProfile() {
         .btn-save-rx{width:100%;padding:14px;background:linear-gradient(135deg,#1d4ed8,#1e40af);border:1px solid rgba(59,130,246,0.3);border-radius:12px;color:white;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:'Outfit',sans-serif;box-shadow:0 4px 20px rgba(29,78,216,0.3);letter-spacing:0.3px}
         .btn-save-rx:hover:not(:disabled){background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 6px 24px rgba(29,78,216,0.45);transform:translateY(-1px)}
         .btn-save-rx:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+        /* ── MODAL ── */
         .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px;animation:fadeIn 0.15s ease}
         @keyframes fadeIn{from{opacity:0}}
         .modal-card{background:#0a1525;border:1px solid rgba(255,255,255,0.08);border-radius:20px;width:480px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 32px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(59,130,246,0.1);animation:modalIn 0.22s cubic-bezier(0.34,1.56,0.64,1)}
@@ -179,10 +194,118 @@ export default function PatientProfile() {
         .btn-modal-save:disabled{opacity:0.5;cursor:not-allowed}
         .empty-state{padding:60px 40px;text-align:center}
         .empty-icon{width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 18px}
-        .followup-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);color:#34d399;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600}
+        .followup-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);color:#34d399;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap}
         .fade-in{animation:fadeInUp 0.28s ease both}
         @keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}}
         .fade-in-d1{animation-delay:0.05s}.fade-in-d2{animation-delay:0.1s}.fade-in-d3{animation-delay:0.15s}
+
+        /* ════════════════════════════════
+           MOBILE RESPONSIVE FIXES
+        ════════════════════════════════ */
+        @media (max-width: 768px) {
+
+          /* Hero banner compact */
+          .hero-banner { padding: 20px 16px 0 !important; }
+
+          /* Back + action buttons row — stack */
+          .hero-banner > div > div:first-child {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 10px !important;
+            margin-bottom: 16px !important;
+          }
+          .hero-banner > div > div:first-child > div {
+            display: flex !important;
+            gap: 8px !important;
+            flex-wrap: wrap !important;
+          }
+          .btn-back, .btn-edit, .btn-rx {
+            flex: 1 !important;
+            justify-content: center !important;
+            font-size: 12px !important;
+            padding: 9px 12px !important;
+          }
+
+          /* Avatar + name row */
+          .hero-banner > div > div:nth-child(2) {
+            gap: 14px !important;
+          }
+          .pat-avatar { width: 60px !important; height: 60px !important; font-size: 22px !important; border-radius: 16px !important; }
+
+          /* Patient name */
+          .hero-banner h1 { font-size: 24px !important; }
+
+          /* Hero stats — scroll horizontally */
+          .hero-banner > div > div:nth-child(2) > div:last-child {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            gap: 8px !important;
+            width: 100% !important;
+            padding-bottom: 4px !important;
+          }
+          .hero-stat {
+            flex: 0 0 90px !important;
+            min-width: 90px !important;
+            padding: 10px 14px !important;
+          }
+          .hero-stat > div:first-child { font-size: 18px !important; }
+
+          /* Tabs — scroll horizontally, no hiding */
+          .tabs-wrap {
+            padding: 0 16px !important;
+            margin: 0 -16px !important;
+          }
+          .tab-btn { padding: 12px 14px !important; font-size: 12px !important; }
+
+          /* Content area padding */
+          .content-area { padding: 16px !important; }
+
+          /* Overview grid — single column */
+          .overview-grid {
+            grid-template-columns: 1fr !important;
+          }
+
+          /* Prescriptions form grid — single col */
+          .rx-form-grid { grid-template-columns: 1fr !important; }
+
+          /* Medicine row grid — stack dosage/duration/route */
+          .med-fields-grid { grid-template-columns: 1fr !important; }
+
+          /* Rx card action buttons wrap */
+          .rx-card > div > div:last-child { flex-wrap: wrap !important; }
+
+          /* Rx detail grid — 2 col on mobile */
+          .rx-detail-grid { grid-template-columns: 1fr 1fr !important; }
+
+          /* Modal — bottom sheet */
+          .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+          .modal-card {
+            width: 100% !important;
+            border-radius: 20px 20px 0 0 !important;
+            max-height: 95vh !important;
+          }
+
+          /* Edit modal grid — single col */
+          .modal-body div[style*="grid-template-columns: 1fr 1fr"] {
+            grid-template-columns: 1fr !important;
+          }
+
+          /* Quick actions wrap */
+          .sect-card-body div[style*="display: \"flex\""],
+          .sect-card-body > div { flex-wrap: wrap !important; }
+
+          /* Empty state compact */
+          .empty-state { padding: 40px 20px !important; }
+        }
+
+        /* ── Desktop enhancements ── */
+        @media (min-width: 1024px) {
+          .content-area { padding: 32px 48px !important; }
+          .hero-banner { padding: 36px 48px 0 !important; }
+          .tabs-wrap { padding: 0 48px !important; margin: 0 -48px !important; }
+        }
       `}</style>
 
       {/* HERO */}
@@ -251,7 +374,7 @@ export default function PatientProfile() {
       <div className="content-area">
 
         {tab === "overview" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+          <div className="overview-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
             <div className="sect-card fade-in">
               <div className="sect-card-head"><div className="sect-card-title"><div className="sect-icon" style={{ background: "rgba(59,130,246,0.1)" }}>📞</div>Contact Details</div></div>
               <div className="sect-card-body">
@@ -317,7 +440,7 @@ export default function PatientProfile() {
               </div>
               <div className="sect-card-body">
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div className="rx-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                     <div>
                       <label className="form-label">Diagnosis / Chief Complaint</label>
                       <input className="form-input" placeholder="e.g. Viral fever, Hypertension" value={form.diagnosis} onChange={e => setForm(f => ({ ...f, diagnosis: e.target.value }))} />
@@ -341,7 +464,7 @@ export default function PatientProfile() {
                             {form.medicines.length > 1 && <button onClick={() => removeMedicineRow(idx)} className="btn-remove-med">✕ Remove</button>}
                           </div>
                           <input className="form-input" style={{ marginBottom: 12, fontWeight: 600 }} placeholder="Medicine name (e.g. Tab. Paracetamol 500mg)" value={med.name} onChange={e => updateMedicine(idx, "name", e.target.value)} />
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                          <div className="med-fields-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                             <div>
                               <label className="form-label" style={{ marginBottom: 5 }}>Dosage</label>
                               <input className="form-input" placeholder="1-0-1" value={med.dosage} onChange={e => updateMedicine(idx, "dosage", e.target.value)} />
