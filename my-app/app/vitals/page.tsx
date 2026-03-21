@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import hospitalConfig from "@/config/hospital";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, ReferenceLine, Legend,
+  Tooltip, ReferenceLine, Legend,
 } from "recharts";
 
 interface VitalRecord {
@@ -63,6 +63,108 @@ const VITAL_UNITS: Record<string, string> = {
 
 function fDate(d: string) { return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }); }
 function fDateTime(d: string) { return new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); }
+
+// ChartSection uses a ResizeObserver to measure its own pixel width,
+// then passes exact px values to LineChart — bypassing ResponsiveContainer
+// which silently returns 0 width in Capacitor WebView.
+function ChartSection({ chartData, activeChart, setActiveChart }: {
+  chartData: any[];
+  activeChart: "bp" | "sugar" | "weight" | "other";
+  setActiveChart: (t: "bp" | "sugar" | "weight" | "other") => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState(300);
+  const CHART_H = 240;
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    // Measure immediately
+    setChartWidth(el.clientWidth || 300);
+    // Then watch for resize
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect?.width;
+      if (w && w > 0) setChartWidth(Math.floor(w));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const TABS = [
+    { key: "bp",     label: "Blood Pressure" },
+    { key: "sugar",  label: "Blood Sugar" },
+    { key: "weight", label: "Weight" },
+    { key: "other",  label: "SpO2 / Pulse" },
+  ] as const;
+
+  return (
+    <div style={{ background: "white", borderRadius: "14px", padding: "20px", marginBottom: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+      {/* Header row: title + tabs — tabs wrap to next line on small screens */}
+      <div style={{ marginBottom: "16px" }}>
+        <div style={{ fontWeight: "700", color: "#0f4c81", fontSize: "15px", marginBottom: "10px" }}>Trend Charts</div>
+        {/* Tabs: full-width flex wrap so nothing gets cut off */}
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+          {TABS.map(tab => (
+            <button key={tab.key} onClick={() => setActiveChart(tab.key)}
+              style={{
+                padding: "6px 14px", borderRadius: "20px", border: "1.5px solid",
+                cursor: "pointer", fontSize: "12px", fontWeight: "700",
+                fontFamily: "inherit", whiteSpace: "nowrap",
+                background: activeChart === tab.key ? "#0f4c81" : "white",
+                color:      activeChart === tab.key ? "white"   : "#555",
+                borderColor:activeChart === tab.key ? "#0f4c81" : "#e2e8f0",
+              }}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Measured container — LineChart gets exact pixel width */}
+      <div ref={containerRef} style={{ width: "100%" }}>
+        {chartWidth > 0 && (
+          <LineChart
+            width={chartWidth}
+            height={CHART_H}
+            data={chartData}
+            margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#999" }} />
+            <YAxis tick={{ fontSize: 10, fill: "#999" }} width={40} />
+            <Tooltip
+              contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "12px" }}
+              formatter={(val: any, name: any) => [`${val} ${VITAL_UNITS[name] || ""}`, VITAL_LABELS[name] || name]}
+            />
+            <Legend formatter={(val) => VITAL_LABELS[val] || val} />
+
+            {activeChart === "bp" && <>
+              <ReferenceLine y={140} stroke="#fca5a5" strokeDasharray="4 4" />
+              <ReferenceLine y={90}  stroke="#fde68a" strokeDasharray="4 4" />
+              <Line isAnimationActive={false} type="monotone" dataKey="bp_systolic"  stroke={CHART_COLORS.bp_systolic}  strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+              <Line isAnimationActive={false} type="monotone" dataKey="bp_diastolic" stroke={CHART_COLORS.bp_diastolic} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+            </>}
+            {activeChart === "sugar" && <>
+              <ReferenceLine y={100} stroke="#fca5a5" strokeDasharray="4 4" />
+              <ReferenceLine y={140} stroke="#f97316" strokeDasharray="4 4" />
+              <Line isAnimationActive={false} type="monotone" dataKey="sugar_fasting" stroke={CHART_COLORS.sugar_fasting} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+              <Line isAnimationActive={false} type="monotone" dataKey="sugar_random"  stroke={CHART_COLORS.sugar_random}  strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+            </>}
+            {activeChart === "weight" && (
+              <Line isAnimationActive={false} type="monotone" dataKey="weight" stroke={CHART_COLORS.weight} strokeWidth={2.5} dot={{ r: 5 }} activeDot={{ r: 7 }} connectNulls />
+            )}
+            {activeChart === "other" && <>
+              <ReferenceLine y={95} stroke="#fde68a" strokeDasharray="4 4" />
+              <Line isAnimationActive={false} type="monotone" dataKey="spo2"        stroke={CHART_COLORS.spo2}        strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+              <Line isAnimationActive={false} type="monotone" dataKey="pulse"       stroke={CHART_COLORS.pulse}       strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+              <Line isAnimationActive={false} type="monotone" dataKey="temperature" stroke={CHART_COLORS.temperature} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+            </>}
+          </LineChart>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function VitalsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -246,9 +348,6 @@ export default function VitalsPage() {
 
         .delete-btn { background: none; border: none; cursor: pointer; color: #e2e8f0; font-size: 14px; padding: 4px 8px; border-radius: 6px; transition: all 0.15s; }
         .delete-btn:hover { background: #fee2e2; color: #e53e3e; }
-        .chart-tabs-scroll { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; flex-wrap: nowrap; }
-
-        /* FIX: page header stacks on mobile */
         .vitals-page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         @media (max-width: 600px) {
           .vitals-page-header { flex-direction: column !important; align-items: stretch !important; }
@@ -374,55 +473,13 @@ export default function VitalsPage() {
                 </div>
               )}
 
-              {/* Charts */}
+              {/* Charts — uses measured pixel width instead of ResponsiveContainer which breaks in WebView */}
               {vitals.length >= 2 && (
-                <div className="chart-container">
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", flexWrap: "wrap", gap: "8px" }}>
-                    <div style={{ fontWeight: "700", color: "#0f4c81", fontSize: "15px" }}>Trend Charts</div>
-                    <div className="chart-tabs-scroll">
-                      {(["bp", "sugar", "weight", "other"] as const).map(tab => (
-                        <button key={tab} className="chart-tab" onClick={() => setActiveChart(tab)}
-                          style={{ background: activeChart === tab ? "#0f4c81" : "white", color: activeChart === tab ? "white" : "#555", borderColor: activeChart === tab ? "#0f4c81" : "#e2e8f0" }}>
-                          {tab === "bp" ? "Blood Pressure" : tab === "sugar" ? "Blood Sugar" : tab === "weight" ? "Weight" : "SpO2 / Pulse"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ width: "100%", height: "240px" }}>
-                    <ResponsiveContainer width="99%" height={240}>
-                      {/* isAnimationActive={false} on ALL Lines — animation never completes in Capacitor WebView causing lines to stay invisible */}
-                      <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" />
-                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#999" }} />
-                        <YAxis tick={{ fontSize: 10, fill: "#999" }} width={40} />
-                        <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "12px" }}
-                          formatter={(val: any, name: any) => [`${val} ${VITAL_UNITS[name] || ""}`, VITAL_LABELS[name] || name]} />
-                        <Legend formatter={(val) => VITAL_LABELS[val] || val} />
-                        {activeChart === "bp" && <>
-                          <ReferenceLine y={140} stroke="#fca5a5" strokeDasharray="4 4" />
-                          <ReferenceLine y={90}  stroke="#fde68a" strokeDasharray="4 4" />
-                          <Line isAnimationActive={false} type="monotone" dataKey="bp_systolic"  stroke={CHART_COLORS.bp_systolic}  strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-                          <Line isAnimationActive={false} type="monotone" dataKey="bp_diastolic" stroke={CHART_COLORS.bp_diastolic} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-                        </>}
-                        {activeChart === "sugar" && <>
-                          <ReferenceLine y={100} stroke="#fca5a5" strokeDasharray="4 4" />
-                          <ReferenceLine y={140} stroke="#f97316" strokeDasharray="4 4" />
-                          <Line isAnimationActive={false} type="monotone" dataKey="sugar_fasting" stroke={CHART_COLORS.sugar_fasting} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-                          <Line isAnimationActive={false} type="monotone" dataKey="sugar_random"  stroke={CHART_COLORS.sugar_random}  strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-                        </>}
-                        {activeChart === "weight" && (
-                          <Line isAnimationActive={false} type="monotone" dataKey="weight" stroke={CHART_COLORS.weight} strokeWidth={2.5} dot={{ r: 5 }} activeDot={{ r: 7 }} connectNulls />
-                        )}
-                        {activeChart === "other" && <>
-                          <ReferenceLine y={95} stroke="#fde68a" strokeDasharray="4 4" />
-                          <Line isAnimationActive={false} type="monotone" dataKey="spo2"        stroke={CHART_COLORS.spo2}        strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-                          <Line isAnimationActive={false} type="monotone" dataKey="pulse"       stroke={CHART_COLORS.pulse}       strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-                          <Line isAnimationActive={false} type="monotone" dataKey="temperature" stroke={CHART_COLORS.temperature} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-                        </>}
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
+                <ChartSection
+                  chartData={chartData}
+                  activeChart={activeChart}
+                  setActiveChart={setActiveChart}
+                />
               )}
 
               {vitals.length === 1 && (
