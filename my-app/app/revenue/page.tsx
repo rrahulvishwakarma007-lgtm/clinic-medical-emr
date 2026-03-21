@@ -401,8 +401,10 @@ export default function RevenueDashboard() {
 
         /* ── Top patients table scroll ── */
         .rev-patients-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-        .rev-patients-wrap table{min-width:500px;width:100%;border-collapse:collapse}
-        .rev-patients-wrap table th,.rev-patients-wrap table td{display:table-cell!important;white-space:nowrap!important;max-width:unset!important}
+        .rev-patients-wrap table{min-width:650px;width:100%;border-collapse:collapse}
+        .rev-patients-wrap table th,.rev-patients-wrap table td{display:table-cell!important;white-space:nowrap!important;max-width:unset!important;overflow:visible!important;text-overflow:unset!important}
+        .rev-patients-wrap table th:last-child,.rev-patients-wrap table td:last-child{display:table-cell!important}
+        .rev-patients-wrap table th:nth-child(4),.rev-patients-wrap table td:nth-child(4){display:table-cell!important}
 
         /* ── MOBILE ── */
         @media(max-width:768px){
