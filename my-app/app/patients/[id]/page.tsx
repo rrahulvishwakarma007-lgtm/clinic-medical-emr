@@ -207,7 +207,35 @@ export default function PatientProfile() {
           /* Hero banner compact */
           .hero-banner { padding: 20px 16px 0 !important; }
 
-          /* Back + action buttons row — stack */
+          /* Hero profile row — stack avatar+name above stats */
+          .hero-profile-row {
+            flex-direction: column !important;
+            gap: 14px !important;
+          }
+          .hero-avatar-name-row {
+            width: 100% !important;
+            gap: 14px !important;
+          }
+
+          /* Hero stats row — full width, scroll if needed */
+          .hero-stats-row {
+            width: 100% !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            flex-shrink: 0 !important;
+          }
+          .hero-stats-row .hero-stat {
+            flex: 1 1 0 !important;
+            min-width: 80px !important;
+            max-width: 120px !important;
+            padding: 10px 12px !important;
+          }
+          .hero-stats-row .hero-stat > div:first-child {
+            font-size: 18px !important;
+          }
+
+          /* Hero back + action buttons row — stack */
           .hero-banner > div > div:first-child {
             flex-direction: column !important;
             align-items: stretch !important;
@@ -328,9 +356,10 @@ export default function PatientProfile() {
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 22, marginBottom: 28, flexWrap: "wrap" }}>
+          <div className="hero-profile-row" style={{ display: "flex", alignItems: "flex-start", gap: 22, marginBottom: 28, flexWrap: "wrap" }}>
+            <div className="hero-avatar-name-row" style={{ display: "flex", alignItems: "flex-start", gap: 22, flex: 1, minWidth: 0 }}>
             <div className="pat-avatar">{initials}</div>
-            <div style={{ flex: 1, minWidth: 220 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
                 <span style={{ fontSize: 11, color: "#4a6fa5", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "1.5px" }}>Patient Profile</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -351,7 +380,8 @@ export default function PatientProfile() {
                 <span style={{ fontSize: 11, color: "#1e3a5f", fontFamily: "monospace" }}>#{(patient.id || "").slice(0, 8).toUpperCase()}</span>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 10, flexShrink: 0, flexWrap: "wrap" as const }}>
+            </div>{/* end hero-avatar-name-row */}
+            <div className="hero-stats-row" style={{ display: "flex", gap: 10, flexShrink: 0, flexWrap: "wrap" as const }}>
               <div className="hero-stat"><div style={{ fontSize: 22, fontWeight: 700, color: "#f0f6ff", lineHeight: 1, marginBottom: 4 }}>{prescriptions.length}</div><div style={{ fontSize: 10, color: "#4a6fa5", textTransform: "uppercase" as const, letterSpacing: "1.5px", fontWeight: 600 }}>Prescriptions</div></div>
               <div className="hero-stat"><div style={{ fontSize: 22, fontWeight: 700, color: "#f0f6ff", lineHeight: 1, marginBottom: 4 }}>{patient.age}</div><div style={{ fontSize: 10, color: "#4a6fa5", textTransform: "uppercase" as const, letterSpacing: "1.5px", fontWeight: 600 }}>Age (Years)</div></div>
               {lastRx && <div className="hero-stat"><div style={{ fontSize: 14, fontWeight: 600, color: "#f0f6ff", lineHeight: 1, marginBottom: 4 }}>{new Date(lastRx.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}</div><div style={{ fontSize: 10, color: "#4a6fa5", textTransform: "uppercase" as const, letterSpacing: "1.5px", fontWeight: 600 }}>Last Visit</div></div>}
