@@ -1,4 +1,4 @@
-        "use client";
+"use client";
         import { useEffect, useState, useRef } from "react";
         import { useSearchParams } from "next/navigation";
         import { Suspense } from "react";
@@ -4187,6 +4187,13 @@
                 .modal-anim{animation:slideUp 0.22s ease}
                 @keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
                 .stat-card{background:white;border-radius:14px;padding:18px 22px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+                /* ── Prescriptions table mobile fix ── */
+                .rx-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
+                .rx-table-wrap table{min-width:750px;width:750px}
+                .rx-table-wrap table th,.rx-table-wrap table td{display:table-cell!important;white-space:nowrap!important;max-width:unset!important;overflow:visible!important;text-overflow:unset!important}
+                .rx-table-wrap table th:last-child,.rx-table-wrap table td:last-child{display:table-cell!important}
+                .rx-table-wrap table th:nth-child(4),.rx-table-wrap table td:nth-child(4){display:table-cell!important}
+                @media(max-width:768px){.rx-table-wrap table th,.rx-table-wrap table td{padding:9px 10px!important;font-size:11px!important}}
               `}</style>
 
               {/* Header */}
@@ -4257,6 +4264,7 @@
 
               {/* Prescriptions Table */}
               {activeTab === "prescriptions" && <div style={{ background:"white", borderRadius:"14px", overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                <div className="rx-table-wrap">
                 <table style={{ width:"100%", borderCollapse:"collapse" }}>
                   <thead>
                     <tr style={{ background:"#0f4c81" }}>
@@ -4338,6 +4346,7 @@
                     })}
                   </tbody>
                 </table>
+                </div>
               </div>}
 
               {/* New Prescription Modal */}
