@@ -64,6 +64,28 @@ const VITAL_UNITS: Record<string, string> = {
 function fDate(d: string) { return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }); }
 function fDateTime(d: string) { return new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); }
 
+// Custom dot renderer — normal dots are small, the LAST point gets a
+// larger pulsing ring (pure CSS animation, no SVG stroke tricks).
+function makeDot(color: string, totalPoints: number) {
+  return (props: any) => {
+    const { cx, cy, index } = props;
+    if (cx == null || cy == null) return null;
+    const isLast = index === totalPoints - 1;
+    if (isLast) {
+      return (
+        <g key={`dot-last-${index}`}>
+          {/* pulsing outer ring — CSS animation on SVG circle */}
+          <circle cx={cx} cy={cy} r={10} fill="none" stroke={color} strokeWidth={2}
+            style={{ animation: "dotPulse 1.6s ease-out infinite", transformOrigin: `${cx}px ${cy}px` }} />
+          {/* solid inner dot */}
+          <circle cx={cx} cy={cy} r={5} fill={color} stroke="white" strokeWidth={2} />
+        </g>
+      );
+    }
+    return <circle key={`dot-${index}`} cx={cx} cy={cy} r={3} fill={color} stroke="white" strokeWidth={1.5} />;
+  };
+}
+
 // ChartSection uses a ResizeObserver to measure its own pixel width,
 // then passes exact px values to LineChart — bypassing ResponsiveContainer
 // which silently returns 0 width in Capacitor WebView.
@@ -74,14 +96,14 @@ function ChartSection({ chartData, activeChart, setActiveChart }: {
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(300);
+  const [animKey, setAnimKey] = useState(0); // re-trigger fade when tab changes
   const CHART_H = 240;
+  const n = chartData.length;
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    // Measure immediately
     setChartWidth(el.clientWidth || 300);
-    // Then watch for resize
     const ro = new ResizeObserver(entries => {
       const w = entries[0]?.contentRect?.width;
       if (w && w > 0) setChartWidth(Math.floor(w));
@@ -89,6 +111,9 @@ function ChartSection({ chartData, activeChart, setActiveChart }: {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // Re-trigger CSS fade animation when tab switches
+  useEffect(() => { setAnimKey(k => k + 1); }, [activeChart]);
 
   const TABS = [
     { key: "bp",     label: "Blood Pressure" },
@@ -99,10 +124,20 @@ function ChartSection({ chartData, activeChart, setActiveChart }: {
 
   return (
     <div style={{ background: "white", borderRadius: "14px", padding: "20px", marginBottom: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-      {/* Header row: title + tabs — tabs wrap to next line on small screens */}
+      {/* Keyframes injected once — safe CSS only, no SVG stroke tricks */}
+      <style>{`
+        @keyframes chartFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes dotPulse {
+          0%   { r: 6;  opacity: 0.8; }
+          100% { r: 14; opacity: 0; }
+        }
+      `}</style>
+
       <div style={{ marginBottom: "16px" }}>
         <div style={{ fontWeight: "700", color: "#0f4c81", fontSize: "15px", marginBottom: "10px" }}>Trend Charts</div>
-        {/* Tabs: full-width flex wrap so nothing gets cut off */}
         <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
           {TABS.map(tab => (
             <button key={tab.key} onClick={() => setActiveChart(tab.key)}
@@ -110,9 +145,10 @@ function ChartSection({ chartData, activeChart, setActiveChart }: {
                 padding: "6px 14px", borderRadius: "20px", border: "1.5px solid",
                 cursor: "pointer", fontSize: "12px", fontWeight: "700",
                 fontFamily: "inherit", whiteSpace: "nowrap",
-                background: activeChart === tab.key ? "#0f4c81" : "white",
-                color:      activeChart === tab.key ? "white"   : "#555",
-                borderColor:activeChart === tab.key ? "#0f4c81" : "#e2e8f0",
+                background:  activeChart === tab.key ? "#0f4c81" : "white",
+                color:       activeChart === tab.key ? "white"   : "#555",
+                borderColor: activeChart === tab.key ? "#0f4c81" : "#e2e8f0",
+                transition: "all 0.15s",
               }}>
               {tab.label}
             </button>
@@ -120,46 +156,48 @@ function ChartSection({ chartData, activeChart, setActiveChart }: {
         </div>
       </div>
 
-      {/* Measured container — LineChart gets exact pixel width */}
+      {/* Fade-in wrapper — re-keyed on tab change so animation re-runs */}
       <div ref={containerRef} style={{ width: "100%" }}>
         {chartWidth > 0 && (
-          <LineChart
-            width={chartWidth}
-            height={CHART_H}
-            data={chartData}
-            margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#999" }} />
-            <YAxis tick={{ fontSize: 10, fill: "#999" }} width={40} />
-            <Tooltip
-              contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "12px" }}
-              formatter={(val: any, name: any) => [`${val} ${VITAL_UNITS[name] || ""}`, VITAL_LABELS[name] || name]}
-            />
-            <Legend formatter={(val) => VITAL_LABELS[val] || val} />
+          <div key={animKey} style={{ animation: "chartFadeIn 0.35s ease both" }}>
+            <LineChart
+              width={chartWidth}
+              height={CHART_H}
+              data={chartData}
+              margin={{ top: 10, right: 10, left: -10, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#999" }} />
+              <YAxis tick={{ fontSize: 10, fill: "#999" }} width={40} />
+              <Tooltip
+                contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "12px" }}
+                formatter={(val: any, name: any) => [`${val} ${VITAL_UNITS[name] || ""}`, VITAL_LABELS[name] || name]}
+              />
+              <Legend formatter={(val) => VITAL_LABELS[val] || val} />
 
-            {activeChart === "bp" && <>
-              <ReferenceLine y={140} stroke="#fca5a5" strokeDasharray="4 4" />
-              <ReferenceLine y={90}  stroke="#fde68a" strokeDasharray="4 4" />
-              <Line isAnimationActive={false} type="monotone" dataKey="bp_systolic"  stroke={CHART_COLORS.bp_systolic}  strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-              <Line isAnimationActive={false} type="monotone" dataKey="bp_diastolic" stroke={CHART_COLORS.bp_diastolic} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-            </>}
-            {activeChart === "sugar" && <>
-              <ReferenceLine y={100} stroke="#fca5a5" strokeDasharray="4 4" />
-              <ReferenceLine y={140} stroke="#f97316" strokeDasharray="4 4" />
-              <Line isAnimationActive={false} type="monotone" dataKey="sugar_fasting" stroke={CHART_COLORS.sugar_fasting} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-              <Line isAnimationActive={false} type="monotone" dataKey="sugar_random"  stroke={CHART_COLORS.sugar_random}  strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-            </>}
-            {activeChart === "weight" && (
-              <Line isAnimationActive={false} type="monotone" dataKey="weight" stroke={CHART_COLORS.weight} strokeWidth={2.5} dot={{ r: 5 }} activeDot={{ r: 7 }} connectNulls />
-            )}
-            {activeChart === "other" && <>
-              <ReferenceLine y={95} stroke="#fde68a" strokeDasharray="4 4" />
-              <Line isAnimationActive={false} type="monotone" dataKey="spo2"        stroke={CHART_COLORS.spo2}        strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-              <Line isAnimationActive={false} type="monotone" dataKey="pulse"       stroke={CHART_COLORS.pulse}       strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-              <Line isAnimationActive={false} type="monotone" dataKey="temperature" stroke={CHART_COLORS.temperature} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-            </>}
-          </LineChart>
+              {activeChart === "bp" && <>
+                <ReferenceLine y={140} stroke="#fca5a5" strokeDasharray="4 4" />
+                <ReferenceLine y={90}  stroke="#fde68a" strokeDasharray="4 4" />
+                <Line isAnimationActive={false} type="monotone" dataKey="bp_systolic"  stroke={CHART_COLORS.bp_systolic}  strokeWidth={2} dot={makeDot(CHART_COLORS.bp_systolic, n)}  activeDot={{ r: 6 }} connectNulls />
+                <Line isAnimationActive={false} type="monotone" dataKey="bp_diastolic" stroke={CHART_COLORS.bp_diastolic} strokeWidth={2} dot={makeDot(CHART_COLORS.bp_diastolic, n)} activeDot={{ r: 6 }} connectNulls />
+              </>}
+              {activeChart === "sugar" && <>
+                <ReferenceLine y={100} stroke="#fca5a5" strokeDasharray="4 4" />
+                <ReferenceLine y={140} stroke="#f97316" strokeDasharray="4 4" />
+                <Line isAnimationActive={false} type="monotone" dataKey="sugar_fasting" stroke={CHART_COLORS.sugar_fasting} strokeWidth={2} dot={makeDot(CHART_COLORS.sugar_fasting, n)} activeDot={{ r: 6 }} connectNulls />
+                <Line isAnimationActive={false} type="monotone" dataKey="sugar_random"  stroke={CHART_COLORS.sugar_random}  strokeWidth={2} dot={makeDot(CHART_COLORS.sugar_random, n)}  activeDot={{ r: 6 }} connectNulls />
+              </>}
+              {activeChart === "weight" && (
+                <Line isAnimationActive={false} type="monotone" dataKey="weight" stroke={CHART_COLORS.weight} strokeWidth={2.5} dot={makeDot(CHART_COLORS.weight, n)} activeDot={{ r: 7 }} connectNulls />
+              )}
+              {activeChart === "other" && <>
+                <ReferenceLine y={95} stroke="#fde68a" strokeDasharray="4 4" />
+                <Line isAnimationActive={false} type="monotone" dataKey="spo2"        stroke={CHART_COLORS.spo2}        strokeWidth={2} dot={makeDot(CHART_COLORS.spo2, n)}        activeDot={{ r: 6 }} connectNulls />
+                <Line isAnimationActive={false} type="monotone" dataKey="pulse"       stroke={CHART_COLORS.pulse}       strokeWidth={2} dot={makeDot(CHART_COLORS.pulse, n)}       activeDot={{ r: 6 }} connectNulls />
+                <Line isAnimationActive={false} type="monotone" dataKey="temperature" stroke={CHART_COLORS.temperature} strokeWidth={2} dot={makeDot(CHART_COLORS.temperature, n)} activeDot={{ r: 6 }} connectNulls />
+              </>}
+            </LineChart>
+          </div>
         )}
       </div>
     </div>
