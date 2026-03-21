@@ -293,7 +293,36 @@ const STYLES = `
   .btn-dark{background:var(--ink);color:#fff;} .btn-dark:hover{background:#1e293b;}
   .btn-sm{padding:6px 12px;font-size:11.5px;}
 
-  @media(max-width:900px){.opd-body{grid-template-columns:1fr;}.opd-left{border-right:none;border-bottom:1px solid var(--border);}.opd-display-body{grid-template-columns:1fr;}}
+@media(max-width:900px){
+    .opd-body{grid-template-columns:1fr;}
+    .opd-left{border-right:none;border-bottom:1px solid var(--border);}
+    .opd-display-body{grid-template-columns:1fr;}
+  }
+
+  @media(max-width:768px){
+    /* Topbar — wrap so clock/buttons don't get cut off */
+    .opd-top{padding:0 12px;height:auto;flex-wrap:wrap;gap:6px;padding-top:10px;padding-bottom:10px;}
+    .opd-top-left{flex-wrap:wrap;gap:8px;}
+    .opd-top-right{flex-wrap:wrap;gap:6px;}
+    .opd-page-title{display:none;}
+    .opd-date{display:none;}
+    .opd-clock{font-size:.78rem;padding:4px 8px;}
+
+    /* Stats row — scroll horizontally so all 4 stats are visible */
+    .opd-stats{
+      display:flex !important;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      flex-wrap:nowrap;
+    }
+    .opd-stat{
+      flex:0 0 75px;
+      min-width:75px;
+      padding:12px 8px;
+    }
+    .opd-stat-val{font-size:1.25rem;}
+    .opd-stat-lbl{font-size:9px;letter-spacing:.03em;}
+  }
 `;
 
 /* ─────────────────────────────────────────────
