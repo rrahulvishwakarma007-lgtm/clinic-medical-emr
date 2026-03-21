@@ -390,6 +390,7 @@ export default function VitalsPage() {
                   </div>
                   <div style={{ width: "100%", height: "240px" }}>
                     <ResponsiveContainer width="99%" height={240}>
+                      {/* isAnimationActive={false} on ALL Lines — animation never completes in Capacitor WebView causing lines to stay invisible */}
                       <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" />
                         <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#999" }} />
@@ -400,23 +401,23 @@ export default function VitalsPage() {
                         {activeChart === "bp" && <>
                           <ReferenceLine y={140} stroke="#fca5a5" strokeDasharray="4 4" />
                           <ReferenceLine y={90}  stroke="#fde68a" strokeDasharray="4 4" />
-                          <Line type="monotone" dataKey="bp_systolic"  stroke={CHART_COLORS.bp_systolic}  strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-                          <Line type="monotone" dataKey="bp_diastolic" stroke={CHART_COLORS.bp_diastolic} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+                          <Line isAnimationActive={false} type="monotone" dataKey="bp_systolic"  stroke={CHART_COLORS.bp_systolic}  strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+                          <Line isAnimationActive={false} type="monotone" dataKey="bp_diastolic" stroke={CHART_COLORS.bp_diastolic} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
                         </>}
                         {activeChart === "sugar" && <>
                           <ReferenceLine y={100} stroke="#fca5a5" strokeDasharray="4 4" />
                           <ReferenceLine y={140} stroke="#f97316" strokeDasharray="4 4" />
-                          <Line type="monotone" dataKey="sugar_fasting" stroke={CHART_COLORS.sugar_fasting} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-                          <Line type="monotone" dataKey="sugar_random"  stroke={CHART_COLORS.sugar_random}  strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+                          <Line isAnimationActive={false} type="monotone" dataKey="sugar_fasting" stroke={CHART_COLORS.sugar_fasting} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+                          <Line isAnimationActive={false} type="monotone" dataKey="sugar_random"  stroke={CHART_COLORS.sugar_random}  strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
                         </>}
                         {activeChart === "weight" && (
-                          <Line type="monotone" dataKey="weight" stroke={CHART_COLORS.weight} strokeWidth={2.5} dot={{ r: 5 }} activeDot={{ r: 7 }} connectNulls />
+                          <Line isAnimationActive={false} type="monotone" dataKey="weight" stroke={CHART_COLORS.weight} strokeWidth={2.5} dot={{ r: 5 }} activeDot={{ r: 7 }} connectNulls />
                         )}
                         {activeChart === "other" && <>
                           <ReferenceLine y={95} stroke="#fde68a" strokeDasharray="4 4" />
-                          <Line type="monotone" dataKey="spo2"        stroke={CHART_COLORS.spo2}        strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-                          <Line type="monotone" dataKey="pulse"       stroke={CHART_COLORS.pulse}       strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
-                          <Line type="monotone" dataKey="temperature" stroke={CHART_COLORS.temperature} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+                          <Line isAnimationActive={false} type="monotone" dataKey="spo2"        stroke={CHART_COLORS.spo2}        strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+                          <Line isAnimationActive={false} type="monotone" dataKey="pulse"       stroke={CHART_COLORS.pulse}       strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
+                          <Line isAnimationActive={false} type="monotone" dataKey="temperature" stroke={CHART_COLORS.temperature} strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
                         </>}
                       </LineChart>
                     </ResponsiveContainer>
