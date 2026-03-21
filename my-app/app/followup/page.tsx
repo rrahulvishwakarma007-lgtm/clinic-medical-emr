@@ -4,23 +4,18 @@ import hospitalConfig from "@/config/hospital";
 
 // ════════════════════════════════════════════════════════
 //  SMART FOLLOW-UP SCHEDULER
-//  - Auto-suggests follow-up date from diagnosis / medicine duration
-//  - Tracks overdue, due-today, upcoming, completed
-//  - One-click WhatsApp message generator
-//  - Links follow-ups back to prescriptions / appointments
 // ════════════════════════════════════════════════════════
 
-// ─── Types ───────────────────────────────────────────
 interface FollowUp {
   id: string;
   patientId: string;
   patientName: string;
   patientPhone: string;
   doctor: string;
-  dueDate: string;          // YYYY-MM-DD
+  dueDate: string;
   createdDate: string;
   diagnosis: string;
-  reason: string;           // why follow-up was scheduled
+  reason: string;
   prescriptionId?: string;
   appointmentId?: string;
   status: "Pending" | "Confirmed" | "Completed" | "Missed" | "Cancelled";
@@ -30,10 +25,9 @@ interface FollowUp {
   suggestedBy: "auto" | "manual";
 }
 
-type TabKey = "dashboard" | "schedule" | "add";
+type TabKey = "dashboard" | "schedule";
 type FilterStatus = "All" | FollowUp["status"];
 
-// ─── Diagnosis → follow-up day suggester ─────────────
 const DIAGNOSIS_RULES: Array<{
   keywords: string[];
   days: number;
@@ -64,15 +58,11 @@ const DIAGNOSIS_RULES: Array<{
 function suggestFollowUp(diagnosis: string, medicineDurations: string[]): { days: number; reason: string; priority: FollowUp["priority"] } | null {
   if (!diagnosis) return null;
   const lower = diagnosis.toLowerCase();
-
-  // Match diagnosis rules
   for (const rule of DIAGNOSIS_RULES) {
     if (rule.keywords.some(kw => lower.includes(kw))) {
       return { days: rule.days, reason: rule.reason, priority: rule.priority };
     }
   }
-
-  // Fallback: derive from longest medicine duration
   const durationDays = medicineDurations.map(dur => {
     const d = dur.toLowerCase();
     const m = d.match(/(\d+)\s*(day|week|month)/);
@@ -83,14 +73,10 @@ function suggestFollowUp(diagnosis: string, medicineDurations: string[]): { days
     return n;
   });
   const maxDur = Math.max(...durationDays, 0);
-  if (maxDur > 0) {
-    return { days: maxDur + 2, reason: "Post-medication review", priority: "Medium" };
-  }
-
+  if (maxDur > 0) return { days: maxDur + 2, reason: "Post-medication review", priority: "Medium" };
   return { days: 7, reason: "Routine follow-up", priority: "Low" };
 }
 
-// ─── Helpers ─────────────────────────────────────────
 function todayStr() { return new Date().toISOString().split("T")[0]; }
 function addDays(date: string, days: number) {
   const d = new Date(date);
@@ -121,7 +107,6 @@ const STATUS_CONFIG = {
   Cancelled: { bg: "#f1f5f9", color: "#64748b", icon: "✕" },
 };
 
-// ─── WhatsApp Message Generator ──────────────────────
 function buildWhatsAppMsg(fu: FollowUp): string {
   const today = todayStr();
   const diff = diffDays(fu.dueDate, today);
@@ -136,7 +121,6 @@ function buildWhatsAppMsg(fu: FollowUp): string {
   );
 }
 
-// ─── Seed demo follow-ups ─────────────────────────────
 function generateSeedFollowUps(): FollowUp[] {
   const today = todayStr();
   return [
@@ -151,7 +135,6 @@ function generateSeedFollowUps(): FollowUp[] {
   ];
 }
 
-// ─── Main Component ───────────────────────────────────
 export default function FollowUpScheduler() {
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
@@ -164,7 +147,6 @@ export default function FollowUpScheduler() {
   const [editingFU, setEditingFU] = useState<FollowUp | null>(null);
   const [whatsAppFU, setWhatsAppFU] = useState<FollowUp | null>(null);
 
-  // Form state
   const [form, setForm] = useState({
     patientId: "", patientName: "", patientPhone: "",
     doctor: hospitalConfig.doctorName,
@@ -175,16 +157,13 @@ export default function FollowUpScheduler() {
   });
   const [suggestion, setSuggestion] = useState<{ days: number; reason: string; priority: FollowUp["priority"] } | null>(null);
 
-  // Load data
   useEffect(() => {
-    // Load from localStorage
     try {
       const raw = localStorage.getItem("clinic_followups");
-      if (raw) { setFollowUps(JSON.parse(raw)); }
-      else { setFollowUps(generateSeedFollowUps()); }
+      if (raw) setFollowUps(JSON.parse(raw));
+      else setFollowUps(generateSeedFollowUps());
     } catch { setFollowUps(generateSeedFollowUps()); }
 
-    // Try loading patients from clinic app
     try {
       const raw = localStorage.getItem("cliniccare_data");
       if (raw) {
@@ -194,7 +173,6 @@ export default function FollowUpScheduler() {
       }
     } catch {}
 
-    // Also try Next.js API
     fetch("/api/patients").then(r => r.json()).then(r => {
       if (r.success && r.data?.length) setPatients(r.data.map((p: any) => ({ id: p.id, name: p.name, phone: p.phone || "" })));
     }).catch(() => {});
@@ -209,7 +187,6 @@ export default function FollowUpScheduler() {
     try { localStorage.setItem("clinic_followups", JSON.stringify(updated)); } catch {}
   }
 
-  // Auto-suggest when diagnosis changes
   useEffect(() => {
     const meds = prescriptions.find(p => p.id === form.prescriptionId)?.medicines?.map((m: any) => m.dur || m.duration || "") || [];
     const s = suggestFollowUp(form.diagnosis, meds);
@@ -218,31 +195,18 @@ export default function FollowUpScheduler() {
 
   function applySuggestion() {
     if (!suggestion) return;
-    setForm(f => ({
-      ...f,
-      dueDate: addDays(todayStr(), suggestion!.days),
-      reason: suggestion!.reason,
-      priority: suggestion!.priority,
-    }));
+    setForm(f => ({ ...f, dueDate: addDays(todayStr(), suggestion!.days), reason: suggestion!.reason, priority: suggestion!.priority }));
   }
 
   function saveFollowUp() {
     if (!form.patientName) return alert("Please enter patient name.");
     if (!form.dueDate) return alert("Please select a follow-up date.");
-
     const isEdit = !!editingFU;
     const fu: FollowUp = {
       id: editingFU?.id || `FU-${Date.now()}`,
-      patientId: form.patientId,
-      patientName: form.patientName,
-      patientPhone: form.patientPhone,
-      doctor: form.doctor,
-      dueDate: form.dueDate,
-      createdDate: editingFU?.createdDate || todayStr(),
-      diagnosis: form.diagnosis,
-      reason: form.reason,
-      notes: form.notes,
-      priority: form.priority,
+      patientId: form.patientId, patientName: form.patientName, patientPhone: form.patientPhone,
+      doctor: form.doctor, dueDate: form.dueDate, createdDate: editingFU?.createdDate || todayStr(),
+      diagnosis: form.diagnosis, reason: form.reason, notes: form.notes, priority: form.priority,
       prescriptionId: form.prescriptionId || undefined,
       status: editingFU?.status || "Pending",
       reminderSent: editingFU?.reminderSent || false,
@@ -250,10 +214,7 @@ export default function FollowUpScheduler() {
     };
     if (isEdit) persist(followUps.map(f => f.id === fu.id ? fu : f));
     else persist([fu, ...followUps]);
-
-    setShowAddModal(false);
-    setEditingFU(null);
-    resetForm();
+    setShowAddModal(false); setEditingFU(null); resetForm();
   }
 
   function resetForm() {
@@ -267,12 +228,8 @@ export default function FollowUpScheduler() {
     setShowAddModal(true);
   }
 
-  function updateStatus(id: string, status: FollowUp["status"]) {
-    persist(followUps.map(f => f.id === id ? { ...f, status } : f));
-  }
-  function markReminderSent(id: string) {
-    persist(followUps.map(f => f.id === id ? { ...f, reminderSent: true } : f));
-  }
+  function updateStatus(id: string, status: FollowUp["status"]) { persist(followUps.map(f => f.id === id ? { ...f, status } : f)); }
+  function markReminderSent(id: string) { persist(followUps.map(f => f.id === id ? { ...f, reminderSent: true } : f)); }
   function deleteFU(id: string) {
     if (!confirm("Delete this follow-up?")) return;
     persist(followUps.filter(f => f.id !== id));
@@ -280,7 +237,6 @@ export default function FollowUpScheduler() {
 
   const today = todayStr();
 
-  // Derived stats
   const stats = useMemo(() => ({
     overdue: followUps.filter(f => f.dueDate < today && f.status === "Pending").length,
     dueToday: followUps.filter(f => f.dueDate === today && (f.status === "Pending" || f.status === "Confirmed")).length,
@@ -290,7 +246,6 @@ export default function FollowUpScheduler() {
     highPriority: followUps.filter(f => f.priority === "High" && f.status === "Pending").length,
   }), [followUps, today]);
 
-  // Auto-mark old pending as missed
   useEffect(() => {
     const updated = followUps.map(f => {
       if (f.status === "Pending" && f.dueDate < today) return { ...f, status: "Missed" as const };
@@ -299,7 +254,6 @@ export default function FollowUpScheduler() {
     if (updated.some((f, i) => f.status !== followUps[i].status)) persist(updated);
   }, [followUps, today]);
 
-  // Filtered list
   const filtered = useMemo(() => {
     return followUps.filter(f => {
       const matchStatus = filterStatus === "All" || f.status === filterStatus;
@@ -307,7 +261,6 @@ export default function FollowUpScheduler() {
       const matchSearch = !searchQ || f.patientName.toLowerCase().includes(searchQ.toLowerCase()) || f.diagnosis.toLowerCase().includes(searchQ.toLowerCase());
       return matchStatus && matchPriority && matchSearch;
     }).sort((a, b) => {
-      // Sort: overdue first, then by date, then priority
       const aOverdue = a.dueDate < today ? -1 : 0;
       const bOverdue = b.dueDate < today ? -1 : 0;
       if (aOverdue !== bOverdue) return aOverdue - bOverdue;
@@ -315,7 +268,6 @@ export default function FollowUpScheduler() {
     });
   }, [followUps, filterStatus, filterPriority, searchQ, today]);
 
-  // Calendar: next 14 days
   const calDays = Array.from({ length: 14 }, (_, i) => addDays(today, i));
   const calMap = useMemo(() => {
     const m: Record<string, FollowUp[]> = {};
@@ -330,14 +282,15 @@ export default function FollowUpScheduler() {
   const labelStyle: React.CSSProperties = { fontSize: "11px", fontWeight: "700", color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" };
 
   return (
-    <div style={{ padding: "2rem", minHeight: "100vh", background: "#f0f4f8", fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="fu-page" style={{ padding: "2rem", minHeight: "100vh", background: "#f0f4f8", fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box", maxWidth: "100%" }}>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" />
       <style>{`
+        *, *::before, *::after { box-sizing: border-box; }
         .fu-card{background:white;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
         .hover-lift{transition:transform 0.12s,box-shadow 0.12s}
         .hover-lift:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.1)}
         .tab-btn{border:none;cursor:pointer;padding:9px 18px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;transition:all 0.15s}
-        .action-btn{border:none;cursor:pointer;padding:5px 11px;border-radius:7px;font-size:11px;font-weight:700;transition:all 0.15s;font-family:inherit}
+        .action-btn{border:none;cursor:pointer;padding:5px 11px;border-radius:7px;font-size:11px;font-weight:700;transition:all 0.15s;font-family:inherit;white-space:nowrap}
         .whatsapp-btn{background:#dcfce7;color:#15803d}.whatsapp-btn:hover{background:#bbf7d0}
         .edit-btn{background:#ede9fe;color:#6d28d9}.edit-btn:hover{background:#ddd6fe}
         .del-btn{background:#fee2e2;color:#991b1b}.del-btn:hover{background:#fecaca}
@@ -350,10 +303,76 @@ export default function FollowUpScheduler() {
         .fade-in{animation:fadeIn 0.2s ease}
         .pulse{animation:pulse 2s infinite}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+
+        /* ── MOBILE FIXES ── */
+        @media (max-width: 768px) {
+          /* Page padding */
+          .fu-page { padding: 1rem !important; }
+
+          /* Header — stack vertically */
+          .fu-header { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+          .fu-header > button { width: 100% !important; text-align: center !important; justify-content: center !important; }
+
+          /* KPI strip — 2 columns */
+          .fu-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+          .fu-kpi-grid .fu-card { padding: 12px 14px !important; }
+
+          /* Tabs — full width */
+          .fu-tabs { width: 100% !important; display: flex !important; }
+          .fu-tabs .tab-btn { flex: 1 !important; font-size: 12px !important; padding: 8px 10px !important; text-align: center !important; }
+
+          /* Dashboard — single column */
+          .fu-dashboard-grid { grid-template-columns: 1fr !important; }
+
+          /* Filters row — stack */
+          .fu-filters { flex-direction: column !important; align-items: stretch !important; }
+          .fu-filters input,
+          .fu-filters select { width: 100% !important; }
+
+          /* Table wrap — horizontal scroll */
+          .fu-table-wrap {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            width: 100% !important;
+          }
+          .fu-table-wrap table {
+            min-width: 680px !important;
+            width: 680px !important;
+            display: table !important;
+          }
+          /* Override globals.css hide rules — show ALL columns */
+          .fu-table-wrap table th,
+          .fu-table-wrap table td {
+            display: table-cell !important;
+            white-space: nowrap !important;
+            padding: 9px 10px !important;
+            font-size: 11px !important;
+            max-width: unset !important;
+            overflow: visible !important;
+            text-overflow: unset !important;
+          }
+          .fu-table-wrap table th:last-child,
+          .fu-table-wrap table td:last-child {
+            display: table-cell !important;
+          }
+          .fu-table-wrap table th:nth-child(4),
+          .fu-table-wrap table td:nth-child(4) {
+            display: table-cell !important;
+          }
+
+          /* Modals — bottom sheet on mobile */
+          .fu-modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+          .fu-modal-box {
+            width: 100% !important;
+            max-width: 100% !important;
+            border-radius: 20px 20px 0 0 !important;
+            max-height: 95vh !important;
+          }
+        }
       `}</style>
 
-      {/* ── Header ─────────────────────────────────── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "22px", flexWrap: "wrap", gap: "12px" }}>
+      {/* ── Header ── */}
+      <div className="fu-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "22px", flexWrap: "wrap", gap: "12px" }}>
         <div>
           <h1 style={{ fontFamily: "'DM Serif Display',serif", fontSize: "26px", color: "#0f4c81", margin: 0 }}>Follow-up Scheduler</h1>
           <p style={{ color: "#888", fontSize: "13px", marginTop: "4px" }}>
@@ -362,20 +381,21 @@ export default function FollowUpScheduler() {
             {stats.dueToday > 0 && <span style={{ marginLeft: "6px", background: "#dbeafe", color: "#1e40af", padding: "2px 10px", borderRadius: "10px", fontWeight: "700", fontSize: "12px" }}>📅 {stats.dueToday} today</span>}
           </p>
         </div>
-        <button onClick={() => { resetForm(); setEditingFU(null); setShowAddModal(true); }} style={{ background: "#0f4c81", color: "white", border: "none", padding: "11px 22px", borderRadius: "10px", cursor: "pointer", fontWeight: "700", fontSize: "14px", boxShadow: "0 4px 14px rgba(15,76,129,0.25)" }}>
+        <button onClick={() => { resetForm(); setEditingFU(null); setShowAddModal(true); }}
+          style={{ background: "#0f4c81", color: "white", border: "none", padding: "11px 22px", borderRadius: "10px", cursor: "pointer", fontWeight: "700", fontSize: "14px", boxShadow: "0 4px 14px rgba(15,76,129,0.25)", whiteSpace: "nowrap" }}>
           + Schedule Follow-up
         </button>
       </div>
 
-      {/* ── KPI Strip ──────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", marginBottom: "20px" }}>
+      {/* ── KPI Strip ── */}
+      <div className="fu-kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", marginBottom: "20px" }}>
         {[
-          { label: "Overdue", value: stats.overdue, color: "#b91c1c", bg: "#fef2f2", icon: "🚨", clickFilter: "Missed" as FilterStatus },
-          { label: "Due Today", value: stats.dueToday, color: "#1e40af", bg: "#dbeafe", icon: "📅", clickFilter: "Pending" as FilterStatus },
-          { label: "Upcoming", value: stats.upcoming, color: "#b45309", bg: "#fffbeb", icon: "🗓", clickFilter: "Pending" as FilterStatus },
-          { label: "High Priority", value: stats.highPriority, color: "#b91c1c", bg: "#fff1f2", icon: "🔴", clickFilter: "Pending" as FilterStatus },
-          { label: "Completed", value: stats.completed, color: "#065f46", bg: "#f0fdf4", icon: "✅", clickFilter: "Completed" as FilterStatus },
-          { label: "Missed", value: stats.missed, color: "#991b1b", bg: "#fee2e2", icon: "⚠", clickFilter: "Missed" as FilterStatus },
+          { label: "Overdue",      value: stats.overdue,      color: "#b91c1c", bg: "#fef2f2", icon: "🚨", clickFilter: "Missed" as FilterStatus },
+          { label: "Due Today",    value: stats.dueToday,     color: "#1e40af", bg: "#dbeafe", icon: "📅", clickFilter: "Pending" as FilterStatus },
+          { label: "Upcoming",     value: stats.upcoming,     color: "#b45309", bg: "#fffbeb", icon: "🗓", clickFilter: "Pending" as FilterStatus },
+          { label: "High Priority",value: stats.highPriority, color: "#b91c1c", bg: "#fff1f2", icon: "🔴", clickFilter: "Pending" as FilterStatus },
+          { label: "Completed",    value: stats.completed,    color: "#065f46", bg: "#f0fdf4", icon: "✅", clickFilter: "Completed" as FilterStatus },
+          { label: "Missed",       value: stats.missed,       color: "#991b1b", bg: "#fee2e2", icon: "⚠", clickFilter: "Missed" as FilterStatus },
         ].map(card => (
           <div key={card.label} className="fu-card hover-lift" onClick={() => { setFilterStatus(card.clickFilter); setActiveTab("schedule"); }}
             style={{ padding: "16px 18px", cursor: "pointer" }}>
@@ -388,11 +408,11 @@ export default function FollowUpScheduler() {
         ))}
       </div>
 
-      {/* ── Tabs ───────────────────────────────────── */}
-      <div style={{ display: "flex", gap: "4px", marginBottom: "18px", background: "white", padding: "4px", borderRadius: "11px", width: "fit-content", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+      {/* ── Tabs ── */}
+      <div className="fu-tabs" style={{ display: "flex", gap: "4px", marginBottom: "18px", background: "white", padding: "4px", borderRadius: "11px", width: "fit-content", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
         {([
           { key: "dashboard", label: "📊 Dashboard" },
-          { key: "schedule", label: "📋 All Follow-ups" },
+          { key: "schedule",  label: "📋 All Follow-ups" },
         ] as const).map(tab => (
           <button key={tab.key} className="tab-btn" onClick={() => setActiveTab(tab.key)}
             style={{ background: activeTab === tab.key ? "#0f4c81" : "transparent", color: activeTab === tab.key ? "white" : "#888" }}>
@@ -401,17 +421,13 @@ export default function FollowUpScheduler() {
         ))}
       </div>
 
-      {/* ══════════════════════════════════════════════
-           DASHBOARD TAB
-         ══════════════════════════════════════════════ */}
+      {/* ══ DASHBOARD TAB ══ */}
       {activeTab === "dashboard" && (
-        <div className="fade-in" style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "16px" }}>
+        <div className="fade-in fu-dashboard-grid" style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "16px" }}>
 
           {/* Due Today + Overdue */}
           <div className="fu-card" style={{ padding: "20px 22px" }}>
-            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: "17px", color: "#0f4c81", marginBottom: "16px" }}>
-              📅 Due Today & Overdue
-            </div>
+            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: "17px", color: "#0f4c81", marginBottom: "16px" }}>📅 Due Today & Overdue</div>
             {followUps.filter(f => f.dueDate <= today && (f.status === "Pending" || f.status === "Confirmed" || f.status === "Missed")).length === 0 ? (
               <div style={{ textAlign: "center", padding: "28px", color: "#bbb" }}>
                 <div style={{ fontSize: "32px", marginBottom: "8px" }}>🎉</div>
@@ -425,10 +441,9 @@ export default function FollowUpScheduler() {
                 const isOverdue = fu.dueDate < today;
                 const daysDiff = diffDays(today, fu.dueDate);
                 const pc = PRIORITY_CONFIG[fu.priority];
-                const sc = STATUS_CONFIG[fu.status];
                 return (
                   <div key={fu.id} style={{ padding: "12px 14px", borderRadius: "10px", border: "1.5px solid", borderColor: isOverdue ? "#fecaca" : "#e8f1fb", background: isOverdue ? "#fff5f5" : "#f8fbff", marginBottom: "10px" }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "3px", flexWrap: "wrap" }}>
                           <span style={{ fontWeight: "700", fontSize: "14px", color: "#1a1a2e" }}>{fu.patientName}</span>
@@ -458,8 +473,6 @@ export default function FollowUpScheduler() {
 
           {/* 14-Day Calendar + Upcoming */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-
-            {/* Mini calendar */}
             <div className="fu-card" style={{ padding: "18px 20px" }}>
               <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: "15px", color: "#0f4c81", marginBottom: "14px" }}>🗓 Next 14 Days</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px" }}>
@@ -480,9 +493,7 @@ export default function FollowUpScheduler() {
                       <div style={{ fontSize: "11px", fontWeight: "700", color: isToday ? "white" : count > 0 ? (hasHigh ? "#b91c1c" : "#1e40af") : "#555" }}>
                         {new Date(day).getDate()}
                       </div>
-                      {count > 0 && (
-                        <div style={{ fontSize: "9px", fontWeight: "800", color: isToday ? "rgba(255,255,255,0.8)" : hasHigh ? "#b91c1c" : "#1e40af" }}>{count}</div>
-                      )}
+                      {count > 0 && <div style={{ fontSize: "9px", fontWeight: "800", color: isToday ? "rgba(255,255,255,0.8)" : hasHigh ? "#b91c1c" : "#1e40af" }}>{count}</div>}
                     </div>
                   );
                 })}
@@ -494,7 +505,6 @@ export default function FollowUpScheduler() {
               </div>
             </div>
 
-            {/* Upcoming next 5 */}
             <div className="fu-card" style={{ padding: "18px 20px" }}>
               <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: "15px", color: "#0f4c81", marginBottom: "14px" }}>🔔 Coming Up</div>
               {followUps.filter(f => f.dueDate > today && (f.status === "Pending" || f.status === "Confirmed")).sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 5).map(fu => {
@@ -526,13 +536,11 @@ export default function FollowUpScheduler() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════
-           SCHEDULE TAB
-         ══════════════════════════════════════════════ */}
+      {/* ══ SCHEDULE TAB ══ */}
       {activeTab === "schedule" && (
         <div className="fade-in">
           {/* Filters */}
-          <div style={{ display: "flex", gap: "10px", marginBottom: "14px", flexWrap: "wrap", alignItems: "center" }}>
+          <div className="fu-filters" style={{ display: "flex", gap: "10px", marginBottom: "14px", flexWrap: "wrap", alignItems: "center" }}>
             <input type="text" placeholder="Search patient or diagnosis..." value={searchQ} onChange={e => setSearchQ(e.target.value)}
               style={{ ...inputStyle, width: "240px" }} />
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as FilterStatus)} style={{ ...inputStyle, width: "auto" }}>
@@ -546,12 +554,13 @@ export default function FollowUpScheduler() {
             <span style={{ fontSize: "12px", color: "#888" }}>{filtered.length} results</span>
           </div>
 
-          <div className="fu-card" style={{ overflow: "hidden" }}>
+          {/* Table — wrapped for horizontal scroll */}
+          <div className="fu-card fu-table-wrap" style={{ overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#0f4c81" }}>
                   {["Patient", "Due Date", "Diagnosis / Reason", "Priority", "Status", "Reminder", "Actions"].map(h => (
-                    <th key={h} style={{ padding: "12px 14px", color: "white", fontSize: "10px", textTransform: "uppercase", letterSpacing: "1.5px", textAlign: "left", fontWeight: "600" }}>{h}</th>
+                    <th key={h} style={{ padding: "12px 14px", color: "white", fontSize: "10px", textTransform: "uppercase", letterSpacing: "1.5px", textAlign: "left", fontWeight: "600", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -568,39 +577,37 @@ export default function FollowUpScheduler() {
                   const sc = STATUS_CONFIG[fu.status];
                   return (
                     <tr key={fu.id} style={{ borderBottom: "1px solid #f5f5f5", background: isOverdue ? "#fff9f9" : i % 2 === 0 ? "white" : "#fafbfc" }}>
-                      <td style={{ padding: "11px 14px" }}>
+                      <td style={{ padding: "11px 14px", whiteSpace: "nowrap" }}>
                         <div style={{ fontWeight: "700", color: "#1a1a2e", fontSize: "13px" }}>{fu.patientName}</div>
                         {fu.patientPhone && <div style={{ fontSize: "11px", color: "#888" }}>{fu.patientPhone}</div>}
                       </td>
-                      <td style={{ padding: "11px 14px" }}>
-                        <div style={{ fontWeight: "700", fontSize: "13px", color: isOverdue ? "#b91c1c" : daysLeft <= 2 ? "#b45309" : "#1a1a2e" }}>
-                          {fShort(fu.dueDate)}
-                        </div>
+                      <td style={{ padding: "11px 14px", whiteSpace: "nowrap" }}>
+                        <div style={{ fontWeight: "700", fontSize: "13px", color: isOverdue ? "#b91c1c" : daysLeft <= 2 ? "#b45309" : "#1a1a2e" }}>{fShort(fu.dueDate)}</div>
                         <div style={{ fontSize: "11px", color: isOverdue ? "#ef4444" : "#888" }}>
                           {isOverdue ? `⚠ ${Math.abs(daysLeft)}d overdue` : fu.dueDate === today ? "Today" : `In ${daysLeft}d`}
                         </div>
                       </td>
                       <td style={{ padding: "11px 14px", maxWidth: "200px" }}>
-                        {fu.diagnosis && <div style={{ fontSize: "11px", color: "#0f4c81", background: "#ebf4ff", padding: "2px 7px", borderRadius: "5px", display: "inline-block", marginBottom: "3px" }}>{fu.diagnosis}</div>}
+                        {fu.diagnosis && <div style={{ fontSize: "11px", color: "#0f4c81", background: "#ebf4ff", padding: "2px 7px", borderRadius: "5px", display: "inline-block", marginBottom: "3px", whiteSpace: "nowrap" }}>{fu.diagnosis}</div>}
                         <div style={{ fontSize: "12px", color: "#555", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fu.reason}</div>
                         {fu.notes && <div style={{ fontSize: "11px", color: "#999", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fu.notes}</div>}
                       </td>
-                      <td style={{ padding: "11px 14px" }}>
+                      <td style={{ padding: "11px 14px", whiteSpace: "nowrap" }}>
                         <span style={{ background: pc.bg, color: pc.color, border: `1px solid ${pc.border}`, padding: "3px 10px", borderRadius: "10px", fontSize: "11px", fontWeight: "700" }}>
                           <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: pc.dot, marginRight: "5px", verticalAlign: "middle" }} />
                           {fu.priority}
                         </span>
                       </td>
-                      <td style={{ padding: "11px 14px" }}>
+                      <td style={{ padding: "11px 14px", whiteSpace: "nowrap" }}>
                         <span style={{ background: sc.bg, color: sc.color, padding: "3px 10px", borderRadius: "10px", fontSize: "11px", fontWeight: "700" }}>{sc.icon} {fu.status}</span>
                       </td>
-                      <td style={{ padding: "11px 14px" }}>
+                      <td style={{ padding: "11px 14px", whiteSpace: "nowrap" }}>
                         {fu.reminderSent
                           ? <span style={{ fontSize: "11px", color: "#16a34a", fontWeight: "600" }}>✓ Sent</span>
                           : <span style={{ fontSize: "11px", color: "#aaa" }}>Not sent</span>}
                       </td>
-                      <td style={{ padding: "11px 14px" }}>
-                        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+                      <td style={{ padding: "11px 14px", whiteSpace: "nowrap" }}>
+                        <div style={{ display: "flex", gap: "4px", flexWrap: "nowrap" }}>
                           {fu.patientPhone && <button className="action-btn whatsapp-btn" onClick={() => { setWhatsAppFU(fu); markReminderSent(fu.id); }}>📱</button>}
                           {(fu.status === "Pending" || fu.status === "Confirmed") && <button className="action-btn done-btn" onClick={() => updateStatus(fu.id, "Completed")}>✔</button>}
                           {fu.status === "Pending" && <button className="action-btn confirm-btn" onClick={() => updateStatus(fu.id, "Confirmed")}>📅</button>}
@@ -617,12 +624,10 @@ export default function FollowUpScheduler() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════
-           ADD / EDIT MODAL
-         ══════════════════════════════════════════════ */}
+      {/* ══ ADD / EDIT MODAL ══ */}
       {showAddModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
-          <div className="modal-anim" style={{ background: "white", borderRadius: "16px", width: "620px", maxHeight: "92vh", overflowY: "auto", boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
+        <div className="fu-modal-overlay" style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
+          <div className="modal-anim fu-modal-box" style={{ background: "white", borderRadius: "16px", width: "620px", maxWidth: "100%", maxHeight: "92vh", overflowY: "auto", boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
             <div style={{ padding: "26px 28px", borderBottom: "1px solid #f0f0f0" }}>
               <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: "20px", color: "#0f4c81", margin: 0 }}>
                 {editingFU ? "Edit Follow-up" : "Schedule Follow-up"}
@@ -630,8 +635,6 @@ export default function FollowUpScheduler() {
               <p style={{ color: "#999", fontSize: "13px", marginTop: "4px" }}>Fill in details — AI will suggest the optimal date based on diagnosis</p>
             </div>
             <div style={{ padding: "22px 28px", display: "flex", flexDirection: "column", gap: "16px" }}>
-
-              {/* Patient */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={labelStyle}>Patient Name *</label>
@@ -652,22 +655,16 @@ export default function FollowUpScheduler() {
                   <input style={inputStyle} placeholder="e.g. 9876543210" value={form.patientPhone} onChange={e => setForm(f => ({ ...f, patientPhone: e.target.value }))} />
                 </div>
               </div>
-
-              {/* Diagnosis — triggers auto-suggest */}
               <div>
                 <label style={labelStyle}>Diagnosis / Condition</label>
                 <input style={inputStyle} placeholder="e.g. Hypertension, Diabetes, URTI..." value={form.diagnosis} onChange={e => setForm(f => ({ ...f, diagnosis: e.target.value }))} />
               </div>
-
-              {/* 🤖 AI Suggestion box */}
               {suggestion && (
                 <div style={{ background: "linear-gradient(135deg, #ebf4ff, #f0fdf4)", border: "1.5px solid #bfdbfe", borderRadius: "10px", padding: "14px 16px" }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px", flexWrap: "wrap" }}>
                     <div>
                       <div style={{ fontSize: "12px", fontWeight: "800", color: "#0f4c81", marginBottom: "4px" }}>🤖 Smart Suggestion</div>
-                      <div style={{ fontSize: "13px", color: "#333" }}>
-                        <strong>Follow-up in {suggestion.days} days</strong> — {fDate(addDays(todayStr(), suggestion.days))}
-                      </div>
+                      <div style={{ fontSize: "13px", color: "#333" }}><strong>Follow-up in {suggestion.days} days</strong> — {fDate(addDays(todayStr(), suggestion.days))}</div>
                       <div style={{ fontSize: "12px", color: "#555", marginTop: "2px" }}>Reason: {suggestion.reason}</div>
                       <div style={{ marginTop: "6px" }}>
                         <span style={{ background: PRIORITY_CONFIG[suggestion.priority].bg, color: PRIORITY_CONFIG[suggestion.priority].color, border: `1px solid ${PRIORITY_CONFIG[suggestion.priority].border}`, padding: "2px 8px", borderRadius: "8px", fontSize: "11px", fontWeight: "700" }}>
@@ -681,8 +678,6 @@ export default function FollowUpScheduler() {
                   </div>
                 </div>
               )}
-
-              {/* Date + Priority */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={labelStyle}>Follow-up Date *</label>
@@ -705,14 +700,10 @@ export default function FollowUpScheduler() {
                   </div>
                 </div>
               </div>
-
-              {/* Reason */}
               <div>
                 <label style={labelStyle}>Reason for Follow-up</label>
                 <input style={inputStyle} placeholder="e.g. BP monitoring, medication review, lab results..." value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} />
               </div>
-
-              {/* Link to prescription */}
               {prescriptions.length > 0 && (
                 <div>
                   <label style={labelStyle}>Link to Prescription (optional)</label>
@@ -720,19 +711,16 @@ export default function FollowUpScheduler() {
                     <option value="">No prescription linked</option>
                     {prescriptions.slice(0, 20).map((p: any) => (
                       <option key={p.id} value={p.id}>
-                        {p.patients?.name || p.patName || "Unknown"} — {(p.diagnosis || p.diagnosis || "").slice(0, 40)} ({(p.created_at || p.date || "").slice(0, 10)})
+                        {p.patients?.name || p.patName || "Unknown"} — {(p.diagnosis || "").slice(0, 40)} ({(p.created_at || p.date || "").slice(0, 10)})
                       </option>
                     ))}
                   </select>
                 </div>
               )}
-
-              {/* Notes */}
               <div>
                 <label style={labelStyle}>Doctor's Notes</label>
                 <textarea style={{ ...inputStyle, minHeight: "60px", resize: "none" }} placeholder="Special instructions, tests to bring, things to monitor..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
-
               <div style={{ display: "flex", gap: "10px" }}>
                 <button onClick={() => { setShowAddModal(false); setEditingFU(null); resetForm(); }}
                   style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "1px solid #ddd", background: "white", cursor: "pointer", fontSize: "14px", color: "#555" }}>Cancel</button>
@@ -746,12 +734,10 @@ export default function FollowUpScheduler() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════
-           WHATSAPP MESSAGE MODAL
-         ══════════════════════════════════════════════ */}
+      {/* ══ WHATSAPP MODAL ══ */}
       {whatsAppFU && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: "20px" }}>
-          <div className="modal-anim" style={{ background: "white", borderRadius: "16px", width: "480px", boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
+        <div className="fu-modal-overlay" style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: "20px" }}>
+          <div className="modal-anim fu-modal-box" style={{ background: "white", borderRadius: "16px", width: "480px", maxWidth: "100%", boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
             <div style={{ padding: "22px 24px", borderBottom: "1px solid #f0f0f0", display: "flex", alignItems: "center", gap: "10px" }}>
               <span style={{ fontSize: "24px" }}>📱</span>
               <div>
@@ -760,7 +746,6 @@ export default function FollowUpScheduler() {
               </div>
             </div>
             <div style={{ padding: "20px 24px" }}>
-              {/* Message preview */}
               <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", padding: "14px 16px", marginBottom: "16px", fontFamily: "monospace", fontSize: "12px", color: "#333", lineHeight: "1.7", whiteSpace: "pre-wrap" }}>
                 {`Namaste ${whatsAppFU.patientName} ji 🙏\n\nThis is a reminder from *${hospitalConfig.name}* (${hospitalConfig.doctorName}).\n\nYour follow-up appointment is due *${whatsAppFU.dueDate === todayStr() ? "today" : whatsAppFU.dueDate === addDays(todayStr(), 1) ? "tomorrow" : `on ${fDate(whatsAppFU.dueDate)}`}*.\nReason: ${whatsAppFU.reason}\n\nPlease call us to confirm: *${hospitalConfig.phone}*\n\nStay healthy! 💚`}
               </div>
