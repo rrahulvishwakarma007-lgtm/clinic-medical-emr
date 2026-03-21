@@ -180,29 +180,79 @@ export default function ReportsPage() {
   const inputStyle: any = { width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1.5px solid #e2e8f0", fontSize: "14px", boxSizing: "border-box", fontFamily: "inherit" };
 
   return (
-    <div style={{ padding: "2rem", minHeight: "100vh", background: "#f0f4f8", fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="rpt-page" style={{ padding: "2rem", minHeight: "100vh", background: "#f0f4f8", fontFamily: "'DM Sans', sans-serif", maxWidth: "100%", boxSizing: "border-box" }}>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" />
       <style>{`
-        .tab-btn{border:none;cursor:pointer;padding:10px 18px;border-radius:8px;font-size:14px;font-weight:500;transition:all 0.15s;display:flex;align-items:center;gap:6px;font-family:inherit}
+        *,*::before,*::after{box-sizing:border-box}
+        .tab-btn{border:none;cursor:pointer;padding:10px 18px;border-radius:8px;font-size:14px;font-weight:500;transition:all 0.15s;display:flex;align-items:center;gap:6px;font-family:inherit;white-space:nowrap;flex-shrink:0}
         .tab-btn.active{background:#0f4c81;color:white}
         .tab-btn:not(.active){background:white;color:#555}
         .tab-btn:not(.active):hover{background:#e8f1fb;color:#0f4c81}
-        .print-btn{background:#0f4c81;color:white;border:none;padding:9px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;transition:all 0.15s;font-family:inherit}
+        .print-btn{background:#0f4c81;color:white;border:none;padding:9px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;transition:all 0.15s;font-family:inherit;white-space:nowrap}
         .print-btn:hover{background:#0a3d6b}
         .stat-card{background:white;border-radius:14px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
-        .data-table{width:100%;border-collapse:collapse}
-        .data-table th{background:#0f4c81;color:white;padding:12px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600}
-        .data-table td{padding:12px 14px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#444}
+
+        /* ── Data table scroll wrapper ── */
+        .rpt-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
+        .data-table{width:100%;border-collapse:collapse;min-width:600px}
+        .data-table th{background:#0f4c81;color:white;padding:12px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;white-space:nowrap}
+        .data-table td{padding:12px 14px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#444;white-space:nowrap}
         .data-table tr:nth-child(even) td{background:#fafbfc}
         .data-table tr:hover td{background:#f0f7ff}
+        /* Override globals.css hide rules */
+        .rpt-table-wrap .data-table th,
+        .rpt-table-wrap .data-table td{display:table-cell!important;max-width:unset!important;overflow:visible!important;text-overflow:unset!important}
+        .rpt-table-wrap .data-table th:last-child,
+        .rpt-table-wrap .data-table td:last-child{display:table-cell!important}
+        .rpt-table-wrap .data-table th:nth-child(4),
+        .rpt-table-wrap .data-table td:nth-child(4){display:table-cell!important}
+
         .drop-zone{border:2px dashed #cbd5e0;border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:all 0.2s}
         .drop-zone.over{border-color:#0f4c81;background:#ebf8ff}
         input:focus,select:focus,textarea:focus{outline:none!important;border-color:#0f4c81!important;box-shadow:0 0 0 3px rgba(15,76,129,0.1)!important}
         .bar{height:8px;border-radius:4px;background:#0f4c81;transition:width 0.6s ease}
+
+        /* ── MOBILE ── */
+        @media(max-width:768px){
+          /* Page padding */
+          .rpt-page{padding:1rem!important}
+
+          /* Header — stack */
+          .rpt-header{flex-direction:column!important;align-items:stretch!important;gap:10px!important}
+          .rpt-header>div:last-child{flex-direction:column!important;align-items:stretch!important;width:100%!important}
+          .rpt-header input,.rpt-header button{width:100%!important}
+
+          /* Tabs — horizontal scroll */
+          .rpt-tabs{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;flex-wrap:nowrap!important;padding-bottom:4px!important}
+
+          /* Section header — stack */
+          .rpt-section-head{flex-direction:column!important;align-items:stretch!important;gap:10px!important}
+          .rpt-section-head .print-btn{width:100%!important;justify-content:center!important}
+
+          /* Overview grid — 2 col */
+          .rpt-overview-kpi{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
+          .rpt-overview-charts{grid-template-columns:1fr!important}
+
+          /* Billing stats grid — single col */
+          .rpt-billing-stats{grid-template-columns:1fr!important;gap:10px!important}
+
+          /* Uploads grid — stack */
+          .rpt-uploads-grid{grid-template-columns:1fr!important}
+
+          /* Table cells compact on mobile */
+          .rpt-table-wrap .data-table th,
+          .rpt-table-wrap .data-table td{padding:9px 10px!important;font-size:11px!important}
+        }
+
+        /* ── DESKTOP ── */
+        @media(min-width:1024px){
+          .rpt-page{padding:2.5rem 3rem!important}
+          .rpt-overview-kpi{grid-template-columns:repeat(3,1fr)!important}
+        }
       `}</style>
 
       {/* Header */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"24px", flexWrap:"wrap", gap:"12px" }}>
+      <div className="rpt-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"24px", flexWrap:"wrap", gap:"12px" }}>
         <div>
           <h1 style={{ fontFamily:"'DM Serif Display',serif", fontSize:"26px", color:"#0f4c81", margin:0 }}>Reports & Analytics</h1>
           <p style={{ color:"#888", fontSize:"14px", marginTop:"4px" }}>{hospitalConfig.name} &bull; Auto-generated from live data</p>
@@ -217,7 +267,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display:"flex", gap:"8px", marginBottom:"24px", flexWrap:"wrap" }}>
+      <div className="rpt-tabs" style={{ display:"flex", gap:"8px", marginBottom:"24px", flexWrap:"wrap" }}>
         {TABS.map(t=>(
           <button key={t.id} className={`tab-btn ${activeTab===t.id?"active":""}`} onClick={()=>setActiveTab(t.id)}>
             <span>{t.icon}</span>{t.label}
@@ -230,7 +280,7 @@ export default function ReportsPage() {
           {/* OVERVIEW */}
           {activeTab==="overview" && (
             <div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:"16px", marginBottom:"24px" }}>
+              <div className="rpt-overview-kpi" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:"16px", marginBottom:"24px" }}>
                 {[
                   { label:"Total Patients", value:patients.length, color:"#0f4c81", icon:"👥" },
                   { label:"Total Invoices", value:billing.length, color:"#1a1a2e", icon:"🧾" },
@@ -246,7 +296,7 @@ export default function ReportsPage() {
                   </div>
                 ))}
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px" }}>
+              <div className="rpt-overview-charts" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px" }}>
                 <div className="stat-card">
                   <div style={{ fontWeight:"700", color:"#1a1a2e", marginBottom:"16px", fontSize:"15px" }}>Blood Group Distribution</div>
                   {Object.entries(bloodGroups).length===0 ? <p style={{ color:"#bbb", fontSize:"13px" }}>No data yet</p> :
@@ -295,11 +345,12 @@ export default function ReportsPage() {
           {/* PATIENTS */}
           {activeTab==="patients" && (
             <div>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
+              <div className="rpt-section-head" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
                 <div style={{ fontWeight:"700", color:"#1a1a2e", fontSize:"16px" }}>Patient Register <span style={{ color:"#888", fontWeight:"400", fontSize:"13px" }}>({filterByDate(patients).length} records)</span></div>
                 <button className="print-btn" onClick={printPatients}>🖨 Print Report</button>
               </div>
               <div style={{ background:"white", borderRadius:"14px", overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                <div className="rpt-table-wrap">
                 <table className="data-table">
                   <thead><tr><th>#</th><th>Patient Name</th><th>Age</th><th>Blood Group</th><th>Phone</th><th>Type</th><th>Address</th><th>Registered</th></tr></thead>
                   <tbody>
@@ -317,6 +368,7 @@ export default function ReportsPage() {
                       ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}
@@ -324,16 +376,17 @@ export default function ReportsPage() {
           {/* BILLING */}
           {activeTab==="billing" && (
             <div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"14px", marginBottom:"20px" }}>
+              <div className="rpt-billing-stats" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"14px", marginBottom:"20px" }}>
                 <div className="stat-card"><div style={{ fontSize:"11px", color:"#999", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"6px" }}>Total Invoices</div><div style={{ fontSize:"26px", fontWeight:"700", color:"#1a1a2e" }}>{billing.length}</div></div>
                 <div className="stat-card"><div style={{ fontSize:"11px", color:"#999", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"6px" }}>Revenue Collected</div><div style={{ fontSize:"26px", fontWeight:"700", color:"#065f46" }}>Rs.{totalRevenue.toLocaleString("en-IN")}</div></div>
                 <div className="stat-card"><div style={{ fontSize:"11px", color:"#999", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"6px" }}>Pending</div><div style={{ fontSize:"26px", fontWeight:"700", color:"#92400e" }}>Rs.{pendingRevenue.toLocaleString("en-IN")}</div></div>
               </div>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
+              <div className="rpt-section-head" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
                 <div style={{ fontWeight:"700", color:"#1a1a2e", fontSize:"16px" }}>Billing Report <span style={{ color:"#888", fontWeight:"400", fontSize:"13px" }}>({filterByDate(billing).length} invoices)</span></div>
                 <button className="print-btn" onClick={printBilling}>🖨 Print Report</button>
               </div>
               <div style={{ background:"white", borderRadius:"14px", overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                <div className="rpt-table-wrap">
                 <table className="data-table">
                   <thead><tr><th>#</th><th>Patient</th><th>Service</th><th>Amount</th><th>GST 18%</th><th>Total</th><th>Date</th><th>Status</th></tr></thead>
                   <tbody>
@@ -352,6 +405,7 @@ export default function ReportsPage() {
                       ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}
@@ -359,11 +413,12 @@ export default function ReportsPage() {
           {/* APPOINTMENTS */}
           {activeTab==="appointments" && (
             <div>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
+              <div className="rpt-section-head" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
                 <div style={{ fontWeight:"700", color:"#1a1a2e", fontSize:"16px" }}>Appointments <span style={{ color:"#888", fontWeight:"400", fontSize:"13px" }}>({filterByDate(appointments).length} records)</span></div>
                 <button className="print-btn" onClick={printAppointments}>🖨 Print Report</button>
               </div>
               <div style={{ background:"white", borderRadius:"14px", overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                <div className="rpt-table-wrap">
                 <table className="data-table">
                   <thead><tr><th>#</th><th>Patient</th><th>Date</th><th>Time</th><th>Type</th><th>Status</th></tr></thead>
                   <tbody>
@@ -378,6 +433,7 @@ export default function ReportsPage() {
                       ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}
@@ -385,11 +441,12 @@ export default function ReportsPage() {
           {/* PRESCRIPTIONS */}
           {activeTab==="prescriptions" && (
             <div>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
+              <div className="rpt-section-head" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
                 <div style={{ fontWeight:"700", color:"#1a1a2e", fontSize:"16px" }}>Prescriptions <span style={{ color:"#888", fontWeight:"400", fontSize:"13px" }}>({filterByDate(prescriptions).length} records)</span></div>
                 <button className="print-btn" onClick={printPrescriptions}>🖨 Print Report</button>
               </div>
               <div style={{ background:"white", borderRadius:"14px", overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                <div className="rpt-table-wrap">
                 <table className="data-table">
                   <thead><tr><th>#</th><th>Patient</th><th>Medicine</th><th>Dosage</th><th>Duration</th><th>Notes</th><th>Date</th></tr></thead>
                   <tbody>
@@ -406,13 +463,14 @@ export default function ReportsPage() {
                       ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}
 
           {/* UPLOADS */}
           {activeTab==="uploads" && (
-            <div style={{ display:"grid", gridTemplateColumns:"360px 1fr", gap:"20px", alignItems:"start" }}>
+            <div className="rpt-uploads-grid" style={{ display:"grid", gridTemplateColumns:"360px 1fr", gap:"20px", alignItems:"start" }}>
               <div style={{ background:"white", borderRadius:"14px", padding:"24px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
                 <div style={{ fontWeight:"700", color:"#1a1a2e", fontSize:"15px", marginBottom:"4px" }}>Upload External File</div>
                 <div style={{ fontSize:"12px", color:"#999", marginBottom:"18px" }}>Lab results, X-rays, scanned documents</div>
@@ -457,6 +515,7 @@ export default function ReportsPage() {
                     <div>No external files uploaded yet</div>
                   </div>
                 ) : (
+                  <div className="rpt-table-wrap">
                   <table className="data-table">
                     <thead><tr><th>File Name</th><th>Patient</th><th>Category</th><th>Size</th><th>Date</th><th>Actions</th></tr></thead>
                     <tbody>
@@ -468,15 +527,16 @@ export default function ReportsPage() {
                           <td style={{ color:"#888" }}>{formatSize(u.size||0)}</td>
                           <td style={{ color:"#888" }}>{(u.created_at||"").split("T")[0]}</td>
                           <td>
-                            <div style={{ display:"flex", gap:"6px" }}>
-                              <button onClick={()=>handleDownload(u)} style={{ background:"#d1fae5", color:"#065f46", border:"none", padding:"5px 10px", borderRadius:"6px", cursor:"pointer", fontSize:"12px", fontWeight:"600" }}>⬇ Download</button>
-                              <button onClick={()=>handleDeleteUpload(u)} style={{ background:"#fee2e2", color:"#991b1b", border:"none", padding:"5px 10px", borderRadius:"6px", cursor:"pointer", fontSize:"12px", fontWeight:"600" }}>✕ Delete</button>
+                            <div style={{ display:"flex", gap:"6px", flexWrap:"nowrap" }}>
+                              <button onClick={()=>handleDownload(u)} style={{ background:"#d1fae5", color:"#065f46", border:"none", padding:"5px 10px", borderRadius:"6px", cursor:"pointer", fontSize:"12px", fontWeight:"600", whiteSpace:"nowrap" }}>⬇ Download</button>
+                              <button onClick={()=>handleDeleteUpload(u)} style={{ background:"#fee2e2", color:"#991b1b", border:"none", padding:"5px 10px", borderRadius:"6px", cursor:"pointer", fontSize:"12px", fontWeight:"600", whiteSpace:"nowrap" }}>✕ Delete</button>
                             </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 )}
               </div>
             </div>
