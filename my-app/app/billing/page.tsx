@@ -153,13 +153,14 @@ export default function BillingPage() {
   const inputStyle: any = { width: "100%", padding: "11px 14px", borderRadius: "8px", border: "1.5px solid #e2e8f0", fontSize: "14px", fontFamily: "inherit", boxSizing: "border-box" };
 
   return (
-    <div style={{ padding: "2rem", background: "#f0f4f8", minHeight: "100vh", fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="billing-page" style={{ padding: "2rem", background: "#f0f4f8", minHeight: "100vh", fontFamily: "'DM Sans', sans-serif", maxWidth: "100%", boxSizing: "border-box" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-        .action-btn{background:none;border:none;cursor:pointer;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;transition:all 0.15s;font-family:inherit}
+        *,*::before,*::after{box-sizing:border-box}
+        .action-btn{background:none;border:none;cursor:pointer;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;transition:all 0.15s;font-family:inherit;white-space:nowrap}
         .view-btn{color:#0f4c81;background:#e8f1fb}.view-btn:hover{background:#c8dff5}
         .print-btn{color:#065f46;background:#d1fae5}.print-btn:hover{background:#a7f3d0}
-        .mark-paid-btn{color:#92400e;background:#fef3c7;border:none;cursor:pointer;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;transition:all 0.15s;font-family:inherit}.mark-paid-btn:hover{background:#fde68a}.mark-paid-btn:disabled{opacity:0.5;cursor:not-allowed}
+        .mark-paid-btn{color:#92400e;background:#fef3c7;border:none;cursor:pointer;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;transition:all 0.15s;font-family:inherit;white-space:nowrap}.mark-paid-btn:hover{background:#fde68a}.mark-paid-btn:disabled{opacity:0.5;cursor:not-allowed}
         .del-btn{color:#991b1b;background:#fee2e2}.del-btn:hover{background:#fecaca}
         .invoice-row:hover td{background:#f0f7ff!important}
         .stat-card{background:white;border-radius:14px;padding:22px 26px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
@@ -168,10 +169,35 @@ export default function BillingPage() {
         @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         .modal-overlay{animation:fadeIn 0.2s ease}
         .modal-box{animation:slideUp 0.25s ease}
+        /* ── Billing table scroll wrap ── */
+        .billing-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
+        .billing-table-wrap table{min-width:680px;width:100%;border-collapse:collapse}
+        .billing-table-wrap table th,.billing-table-wrap table td{display:table-cell!important;white-space:nowrap!important;max-width:unset!important;overflow:visible!important;text-overflow:unset!important}
+        .billing-table-wrap table th:last-child,.billing-table-wrap table td:last-child{display:table-cell!important}
+        .billing-table-wrap table th:nth-child(4),.billing-table-wrap table td:nth-child(4){display:table-cell!important}
+        /* ── MOBILE ── */
+        @media(max-width:768px){
+          .billing-page{padding:1rem!important}
+          .billing-header{flex-direction:column!important;align-items:stretch!important;gap:10px!important}
+          .billing-header button{width:100%!important;text-align:center!important}
+          .billing-stats{grid-template-columns:1fr!important;gap:10px!important}
+          .stat-card{padding:14px 16px!important}
+          .billing-table-wrap table th,.billing-table-wrap table td{padding:9px 10px!important;font-size:11px!important}
+          .modal-overlay{align-items:flex-end!important;padding:0!important}
+          .modal-box{width:100%!important;max-width:100%!important;border-radius:20px 20px 0 0!important;max-height:95vh!important}
+          .view-meta-grid{grid-template-columns:1fr!important;gap:12px!important}
+          .invoice-totals{justify-content:stretch!important}
+          .invoice-totals>div{width:100%!important}
+          .create-modal{width:100%!important;max-width:100%!important;border-radius:20px 20px 0 0!important;padding:24px 20px!important}
+        }
+        /* ── DESKTOP ── */
+        @media(min-width:1024px){
+          .billing-page{padding:2.5rem 3rem!important}
+        }
       `}</style>
 
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+      <div className="billing-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
         <div>
           <h1 style={{ fontSize: "26px", fontWeight: "700", color: "#0f4c81", fontFamily: "'DM Serif Display', serif", margin: 0 }}>Billing & Invoices</h1>
           <p style={{ color: "#888", fontSize: "14px", marginTop: "4px" }}>{invoices.length} total invoices</p>
@@ -185,7 +211,7 @@ export default function BillingPage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "16px", marginBottom: "24px" }}>
+      <div className="billing-stats" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "16px", marginBottom: "24px" }}>
         {[
           { label: "Total Invoices", value: invoices.length, color: "#1a1a2e" },
           { label: "Revenue Collected", value: `Rs. ${totalRevenue.toLocaleString("en-IN")}`, color: "#065f46" },
@@ -200,6 +226,7 @@ export default function BillingPage() {
 
       {/* Table */}
       <div style={{ background: "white", borderRadius: "14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+        <div className="billing-table-wrap">
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#0f4c81" }}>
@@ -239,6 +266,7 @@ export default function BillingPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* View Invoice Modal */}
@@ -258,7 +286,7 @@ export default function BillingPage() {
               </div>
             </div>
             <div style={{ padding: "28px 36px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", marginBottom: "24px" }}>
+              <div className="view-meta-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", marginBottom: "24px" }}>
                 <div>
                   <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "2px", color: "#999", marginBottom: "6px" }}>Billed To</div>
                   <div style={{ fontWeight: "700", color: "#1a1a2e", fontSize: "15px" }}>{viewInvoice.patient_name}</div>
@@ -285,7 +313,7 @@ export default function BillingPage() {
                   <span style={{ textAlign: "right", fontWeight: "700", color: "#0f4c81" }}>Rs. {(Number(viewInvoice.amount) * 1.18).toFixed(2)}</span>
                 </div>
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "24px" }}>
+              <div className="invoice-totals" style={{ display: "flex", justifyContent: "flex-end", marginBottom: "24px" }}>
                 <div style={{ width: "260px" }}>
                   {[["Subtotal", `Rs. ${Number(viewInvoice.amount).toLocaleString("en-IN")}`], ["GST @ 18%", `Rs. ${(viewInvoice.amount * 0.18).toFixed(2)}`], ["Discount", "Rs. 0.00"]].map(([l, v]) => (
                     <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: "1px solid #f0f0f0", fontSize: "13px", color: "#555" }}>
@@ -316,8 +344,8 @@ export default function BillingPage() {
 
       {/* Create Invoice Modal */}
       {showAdd && (
-        <div className="modal-overlay" style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
-          <div className="modal-box" style={{ background: "white", padding: "36px", borderRadius: "16px", width: "420px", boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
+        <div className="modal-overlay" style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000, padding: "20px" }}>
+          <div className="modal-box create-modal" style={{ background: "white", padding: "36px", borderRadius: "16px", width: "420px", maxWidth: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 60px rgba(0,0,0,0.3)" }}>
             <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: "22px", color: "#0f4c81", marginBottom: "6px" }}>New Invoice</h2>
             <p style={{ color: "#999", fontSize: "13px", marginBottom: "24px" }}>Fill in details to generate an invoice</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>

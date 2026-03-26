@@ -5,6 +5,9 @@ export const fetchCache = "force-no-store";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import CallButton from "@/components/CallButton";
+import { fetchWithCache, CACHE_KEYS } from "@/lib/offlineCache";
+import { useOffline } from "@/hooks/useOffline";
 
 function calcAge(dob: string): number {
   if (!dob) return 0;
@@ -35,6 +38,9 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const isOffline = useOffline();
+  const [fromCache, setFromCache] = useState(false);
+  const [cacheTime, setCacheTime] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [filterType, setFilterType] = useState("All");
@@ -52,11 +58,14 @@ export default function PatientsPage() {
   async function loadPatients() {
     setLoading(true);
     try {
-      const res = await fetch("/api/patients", { cache: "no-store" });
-      if (!res.ok) return;
-      const result = await res.json();
-      if (result.success && Array.isArray(result.data)) setPatients(result.data);
-      else if (Array.isArray(result)) setPatients(result);
+      const { data, fromCache: cached, cacheTime: ct } = await fetchWithCache(
+        "/api/patients",
+        CACHE_KEYS.patients
+      );
+      if (data?.success && Array.isArray(data.data)) setPatients(data.data);
+      else if (Array.isArray(data)) setPatients(data);
+      setFromCache(cached);
+      setCacheTime(ct);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }
@@ -201,6 +210,29 @@ export default function PatientsPage() {
         }
         .action-btn:hover { background: #dbeafe; border-color: #93c5fd; transform: translateY(-1px); }
 
+        .call-btn {
+          padding: 7px 12px;
+          border-radius: 8px;
+          font-size: 12px; font-weight: 700;
+          border: 1.5px solid #bbf7d0;
+          background: #f0fdf4;
+          color: #15803d;
+          cursor: pointer;
+          text-decoration: none;
+          display: inline-flex; align-items: center; gap: 4px;
+          transition: all 0.15s;
+          font-family: 'Outfit', sans-serif;
+          white-space: nowrap;
+        }
+        .call-btn:hover { background: #dcfce7; border-color: #86efac; transform: translateY(-1px); }
+        .call-btn-disabled {
+          padding: 7px 12px; border-radius: 8px;
+          font-size: 12px; font-weight: 600;
+          border: 1.5px solid #e2e8f0; background: #f8fafc;
+          color: #cbd5e1; display: inline-flex; align-items: center; gap: 4px;
+          cursor: not-allowed; white-space: nowrap;
+        }
+
         .skeleton {
           background: linear-gradient(90deg, #f0f4f8 25%, #e8edf2 50%, #f0f4f8 75%);
           background-size: 600px 100%;
@@ -254,12 +286,69 @@ export default function PatientsPage() {
           background: #fff1f2; color: #be123c;
           border: 1px solid #fecdd3;
         }
+
+        /* ── Patients table scroll ── */
+        .pat-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+        .pat-table-wrap table { min-width: 700px; width: 100%; border-collapse: collapse; }
+        .pat-table-wrap table th,
+        .pat-table-wrap table td { display: table-cell !important; white-space: nowrap !important; max-width: unset !important; overflow: visible !important; text-overflow: unset !important; }
+        .pat-table-wrap table th:last-child,
+        .pat-table-wrap table td:last-child { display: table-cell !important; }
+        .pat-table-wrap table th:nth-child(4),
+        .pat-table-wrap table td:nth-child(4) { display: table-cell !important; }
+
+        /* ── MOBILE ── */
+        @media (max-width: 768px) {
+
+          /* Page padding */
+          .page-wrap { padding: 14px 1rem !important; }
+
+          /* Header — stack */
+          .pat-header { flex-direction: column !important; align-items: stretch !important; }
+          .pat-header button { width: 100% !important; justify-content: center !important; }
+
+          /* Stats row — smaller, horizontal scroll */
+          .pat-stats-row { gap: 8px !important; }
+          .stat-pill { padding: 10px 14px !important; flex-shrink: 0; min-width: 110px; }
+          .stat-pill > div:first-child { width: 32px !important; height: 32px !important; font-size: 15px !important; }
+
+          /* Toolbar — stack */
+          .pat-toolbar { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+          .pat-toolbar > div:first-child { max-width: 100% !important; }
+          .pat-filter-chips { flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; padding-bottom: 2px !important; }
+          .pat-filter-chips button { flex-shrink: 0 !important; }
+          .pat-sort-view { justify-content: space-between !important; width: 100% !important; }
+          .pat-sort-view select { flex: 1 !important; }
+
+          /* Table cells compact */
+          .pat-table-wrap table th,
+          .pat-table-wrap table td { padding: 10px 10px !important; font-size: 11px !important; }
+
+          /* Grid view — single col on very small, 2 col on larger mobile */
+          .pat-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important; gap: 10px !important; }
+
+          /* Modal — bottom sheet */
+          .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+          .modal-box { width: 100% !important; max-width: 100% !important; border-radius: 20px 20px 0 0 !important; max-height: 95vh !important; }
+
+          /* Modal form grid — single col */
+          .modal-grid-2 { grid-template-columns: 1fr !important; }
+        }
+
+        /* ── DESKTOP ENHANCEMENTS ── */
+        @media (min-width: 1024px) {
+          .page-wrap { padding: 32px 40px !important; }
+        }
+        @media (min-width: 1400px) {
+          .page-wrap { padding: 36px 48px !important; max-width: 1600px !important; }
+          .pat-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important; }
+        }
       `}</style>
 
       <div className="page-wrap">
 
         {/* ── Header ── */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
+        <div className="pat-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "30px", color: "#0d1b2e", margin: 0, letterSpacing: "-0.5px" }}>
               Patient Directory
@@ -268,21 +357,40 @@ export default function PatientsPage() {
               {loading ? "Loading..." : `${patients.length} patients registered`}
             </p>
           </div>
-          <button onClick={() => setShowAdd(true)} style={{
-            background: "linear-gradient(135deg, #0f4c81, #1a6bbf)",
-            color: "white", border: "none", padding: "11px 22px",
-            borderRadius: "11px", cursor: "pointer", fontWeight: "700",
-            fontSize: "14px", fontFamily: "'Outfit', sans-serif",
-            display: "flex", alignItems: "center", gap: "8px",
-            boxShadow: "0 4px 14px rgba(15,76,129,0.35)",
-            transition: "all 0.15s",
-          }}>
-            <span style={{ fontSize: "18px" }}>＋</span> Register Patient
+          <button onClick={() => setShowAdd(true)}
+            disabled={isOffline}
+            title={isOffline ? "Cannot add patient while offline" : ""}
+            style={{
+              background: isOffline ? "#e2e8f0" : "linear-gradient(135deg, #0f4c81, #1a6bbf)",
+              color: isOffline ? "#94a3b8" : "white",
+              border: "none", padding: "11px 22px",
+              borderRadius: "11px", cursor: isOffline ? "not-allowed" : "pointer",
+              fontWeight: "700", fontSize: "14px", fontFamily: "'Outfit', sans-serif",
+              display: "flex", alignItems: "center", gap: "8px",
+              boxShadow: isOffline ? "none" : "0 4px 14px rgba(15,76,129,0.35)",
+              transition: "all 0.15s",
+            }}>
+            <span style={{ fontSize: "18px" }}>{isOffline ? "📵" : "＋"}</span>
+            {isOffline ? "Offline" : "Register Patient"}
           </button>
         </div>
 
+        {/* ── Cache notice ── */}
+        {fromCache && cacheTime && (
+          <div style={{
+            background: "#fffbeb", border: "1px solid #fcd34d",
+            borderLeft: "4px solid #d97706", borderRadius: "10px",
+            padding: "10px 16px", fontSize: "12px", color: "#92400e",
+            fontWeight: "500", display: "flex", alignItems: "center",
+            gap: "8px", marginBottom: "16px",
+          }}>
+            <span style={{ fontSize: "16px" }}>📋</span>
+            <span>Showing cached data from <strong>{cacheTime}</strong> — connect to internet to refresh</span>
+          </div>
+        )}
+
         {/* ── Stats Row ── */}
-        <div style={{ display: "flex", gap: "10px", overflowX: "auto", flexWrap: "nowrap", paddingBottom: "4px", marginBottom: "20px" }}>
+        <div className="pat-stats-row" style={{ display: "flex", gap: "10px", overflowX: "auto", flexWrap: "nowrap", paddingBottom: "4px", marginBottom: "20px" }}>
           {[
             { label: "Total Patients", value: stats.total, icon: "👥", color: "#0f4c81", bg: "#e8f0fe" },
             { label: "General", value: stats.general, icon: "🏥", color: "#1d4ed8", bg: "#eff6ff" },
@@ -305,7 +413,7 @@ export default function PatientsPage() {
         </div>
 
         {/* ── Toolbar ── */}
-        <div style={{ background: "white", border: "1px solid #e8edf2", borderRadius: "14px", padding: "14px 18px", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
+        <div className="pat-toolbar" style={{ background: "white", border: "1px solid #e8edf2", borderRadius: "14px", padding: "14px 18px", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", boxShadow: "var(--shadow-sm)" }}>
           {/* Search */}
           <div style={{ position: "relative", flex: "1", minWidth: "200px", maxWidth: "320px" }}>
             <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "14px", color: "#94a3b8", pointerEvents: "none" }}>🔍</span>
@@ -317,7 +425,7 @@ export default function PatientsPage() {
           </div>
 
           {/* Filter chips */}
-          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+          <div className="pat-filter-chips" style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
             {["All", "General Patient", "Emergency", "Follow-up"].map(t => (
               <button key={t} className={`filter-chip ${filterType === t ? "active" : ""}`} onClick={() => setFilterType(t)}>
                 {t === "General Patient" ? "General" : t}
@@ -329,7 +437,7 @@ export default function PatientsPage() {
           </div>
 
           {/* Sort + View */}
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <div className="pat-sort-view" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
               style={{ ...inp, width: "auto", padding: "7px 12px", margin: 0, fontSize: "12px", fontWeight: "600" }}>
               <option value="recent">Recent First</option>
@@ -356,7 +464,8 @@ export default function PatientsPage() {
 
         {/* ── TABLE VIEW ── */}
         {viewMode === "table" && (
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e8edf2", overflowX: "auto", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e8edf2", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+            <div className="pat-table-wrap">
             <table style={{ width: "100%", minWidth: "700px", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#f8fafc", borderBottom: "1.5px solid #e8edf2" }}>
@@ -439,19 +548,23 @@ export default function PatientsPage() {
                       </td>
                       {/* Action */}
                       <td style={{ padding: "14px 16px", textAlign: "right" }}>
-                        <Link href={`/patients/${p.id}`} className="action-btn">
-                          View →
-                        </Link>
+                        <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", flexWrap: "nowrap" }}>
+                          {p.phone && <CallButton phone={p.phone} patientName={p.name} size="sm" />}
+                          <Link href={`/patients/${p.id}`} className="action-btn">
+                            View →
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+            </div>
 
             {/* Table footer */}
             {!loading && displayed.length > 0 && (
-              <div style={{ padding: "12px 20px", borderTop: "1px solid #f0f5fa", background: "#fafcff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ padding: "12px 20px", borderTop: "1px solid #f0f5fa", background: "#fafcff", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
                 <div style={{ fontSize: "12px", color: "#94a3b8" }}>
                   Showing <strong style={{ color: "#4a5568" }}>{displayed.length}</strong> of <strong style={{ color: "#4a5568" }}>{patients.length}</strong> patients
                 </div>
@@ -463,7 +576,7 @@ export default function PatientsPage() {
 
         {/* ── GRID VIEW ── */}
         {viewMode === "grid" && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "14px" }}>
+          <div className="pat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "14px" }}>
             {loading ? Array.from({ length: 8 }).map((_, i) => (
               <div key={i} style={{ background: "white", borderRadius: "14px", padding: "18px", border: "1px solid #e8edf2" }}>
                 <div className="skeleton" style={{ height: "40px", width: "40px", borderRadius: "10px", marginBottom: "12px" }} />
@@ -511,15 +624,20 @@ export default function PatientsPage() {
                     </div>
                   )}
 
-                  <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid #f0f5fa" }}>
+                  <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid #f0f5fa", display: "flex", gap: "8px" }}>
+                    {p.phone && (
+                      <div style={{ flex: 1 }}>
+                        <CallButton phone={p.phone} patientName={p.name} size="md" />
+                      </div>
+                    )}
                     <Link href={`/patients/${p.id}`} style={{
-                      display: "block", textAlign: "center",
+                      flex: 2, display: "flex", alignItems: "center", justifyContent: "center",
                       background: "linear-gradient(135deg, #eff6ff, #dbeafe)",
                       color: "#1d4ed8", padding: "8px", borderRadius: "9px",
                       textDecoration: "none", fontWeight: "700", fontSize: "13px",
                       border: "1px solid #bfdbfe", transition: "all 0.15s",
                     }}>
-                      View Full Record →
+                      View Record →
                     </Link>
                   </div>
                 </div>
@@ -556,7 +674,7 @@ export default function PatientsPage() {
                 )}
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div className="modal-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                 <input placeholder="Phone Number *" style={inp} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
                 <select style={inp} value={form.blood_group} onChange={e => setForm({ ...form, blood_group: e.target.value })}>
                   <option value="">Blood Group</option>

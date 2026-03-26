@@ -153,35 +153,20 @@ export default function VoiceAssistant() {
 
   // ── Claude Haiku — fast + cheap ───────────────────────────────────────────
   const processWithAI = useCallback(async (userSaid: string, currentStage: Stage, data: CollectedData) => {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    // Uses /api/maya route which calls Gemini API (free)
+    const res = await fetch("/api/maya", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 800,
-        system: `You are Maya, a friendly AI assistant in an Indian clinic EMR. Speak Hinglish in Roman script ONLY (no Devanagari — text is spoken by TTS).
-
-Stage: "${currentStage}"
-Data so far: ${JSON.stringify(data, null, 2)}
-
-Stage flow: ask_patient_name → ask_age → ask_phone → ask_symptoms → ask_diagnosis → ask_medicines → ask_notes → confirming → done
-
-Extract data. Give warm short Hinglish reply (max 2 sentences). Move to next stage.
-For confirming: haan/yes/ok/theek/correct → nextStage="done"
-
-Reply examples:
-- "Theek hai, Rahul note kar liya. Age batayein?"
-- "Got it, teen din se fever. Diagnosis kya hai?"
-- "Perfect, Paracetamol 500mg twice daily. Koi aur medicine?"
-
-Return ONLY valid JSON:
-{"reply":"...","extracted":{"patient":{"name":"","age":"","phone":""},"prescription":{"diagnosis":"","symptoms":"","symptom_duration":"","medicines":[],"notes":""}},"filledField":"Patient Name/Age/Phone/Symptoms/Diagnosis/Medicines/Notes","nextStage":"..."}
-medicines format: [{medicine,dosage,frequency,duration,route,instructions}]`,
-        messages: [{ role: "user", content: userSaid || "(silence)" }]
-      })
+        userSaid: userSaid || "(silence)",
+        currentStage,
+        data,
+        mode: "prescription",
+      }),
     });
     const d = await res.json();
-    return JSON.parse((d.content?.[0]?.text || "{}").replace(/```json|```/g, "").trim());
+    if (d.error) throw new Error(d.error);
+    return d;
   }, []);
 
   const handleResponse = useCallback(async (userText: string) => {

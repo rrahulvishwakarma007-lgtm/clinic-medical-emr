@@ -2,6 +2,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import hospitalConfig from "@/config/hospital";
+import { fetchWithCache, CACHE_KEYS } from "@/lib/offlineCache";
+import { useOffline } from "@/hooks/useOffline";
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; dot: string }> = {
   "Confirmed":   { bg: "#dbeafe", color: "#1e40af", dot: "#3b82f6" },
@@ -72,6 +74,9 @@ function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: n
 
 export default function Dashboard() {
   const router = useRouter();
+  const isOffline = useOffline();
+  const [fromCache, setFromCache] = useState(false);
+  const [cacheTime, setCacheTime] = useState<string | null>(null);
   const [stats, setStats] = useState({ totalPatients: 0, todaysAppointments: 0, prescriptionsIssued: 0, pendingBilling: 0 });
   const [todaysList, setTodaysList] = useState<any[]>([]);
   const [overdueList, setOverdueList] = useState<any[]>([]);
@@ -108,11 +113,21 @@ export default function Dashboard() {
   async function loadDashboardData() {
     setLoading(true);
     try {
-      const [pRes, aRes, prRes, bRes] = await Promise.all([
-        fetch("/api/patients"), fetch("/api/appointments"),
-        fetch("/api/prescriptions"), fetch("/api/billing"),
+      const [
+        { data: pData, fromCache: pCached, cacheTime: pTime },
+        { data: aData },
+        { data: prData },
+        { data: bData },
+      ] = await Promise.all([
+        fetchWithCache("/api/patients",      CACHE_KEYS.patients),
+        fetchWithCache("/api/appointments",  CACHE_KEYS.appointments),
+        fetchWithCache("/api/prescriptions", CACHE_KEYS.prescriptions),
+        fetchWithCache("/api/billing",       CACHE_KEYS.billing),
       ]);
-      const [pData, aData, prData, bData] = await Promise.all([pRes.json(), aRes.json(), prRes.json(), bRes.json()]);
+
+      // Track if we're showing cached data
+      if (pCached) { setFromCache(true); setCacheTime(pTime); }
+      else         { setFromCache(false); setCacheTime(null); }
 
       const today = new Date().toISOString().split("T")[0];
       const now = new Date();
@@ -126,15 +141,15 @@ export default function Dashboard() {
       const pendingBilling = Array.isArray(bData) ? bData.filter((b: any) => b.status === "Pending").length : 0;
 
       setStats({
-        totalPatients: pData.success ? pData.data.length : 0,
+        totalPatients: pData?.success ? pData.data.length : 0,
         todaysAppointments: todaysAppointments.length,
         prescriptionsIssued: Array.isArray(prData) ? prData.length : 0,
         pendingBilling,
       });
       setTodaysList(todaysAppointments.sort((a: any, b: any) => (a.time || "").localeCompare(b.time || "")));
       setOverdueList(overdue);
-      setAllPatients(pData.success ? pData.data : []);
-      setRecentPatients(pData.success ? pData.data.slice(0, 8) : []);
+      setAllPatients(pData?.success ? pData.data : []);
+      setRecentPatients(pData?.success ? pData.data.slice(0, 8) : []);
       setRecentPrescriptions(Array.isArray(prData) ? prData.slice(0, 6) : []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
@@ -520,16 +535,92 @@ export default function Dashboard() {
           letter-spacing: 0.5px;
         }
 
+        /* ── Appointment table scroll ── */
+        .appt-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+        .appt-table-wrap table { min-width: 520px; width: 100%; border-collapse: collapse; }
+        .appt-table-wrap table th,
+        .appt-table-wrap table td { display: table-cell !important; white-space: nowrap !important; max-width: unset !important; overflow: visible !important; }
+        .appt-table-wrap table th:last-child,
+        .appt-table-wrap table td:last-child { display: table-cell !important; }
+        .appt-table-wrap table th:nth-child(4),
+        .appt-table-wrap table td:nth-child(4) { display: table-cell !important; }
+
+        /* ── Tablet ── */
         @media (max-width: 1200px) {
           .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .main-grid { grid-template-columns: 1fr !important; }
           .qa-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
+
+        /* ── MOBILE ── */
+        @media (max-width: 768px) {
+
+          /* Nav header — compact */
+          .glass-header { padding: 0 1rem !important; }
+          .dash-nav-row { height: auto !important; flex-wrap: wrap !important; gap: 8px !important; padding: 10px 0 !important; }
+
+          /* Hide text labels on nav, keep icons */
+          .nav-btn { padding: 7px 10px !important; font-size: 12px !important; }
+
+          /* Search + register btn — stack below nav */
+          .dash-right-row { width: 100% !important; justify-content: space-between !important; }
+          .search-input-hdr { width: 160px !important; font-size: 12px !important; }
+          .search-input-hdr:focus { width: 180px !important; }
+          .register-btn { padding: 7px 12px !important; font-size: 12px !important; }
+
+          /* Sub-header — stack */
+          .dash-subheader { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; padding: 10px 1rem !important; }
+          .dash-subheader-left { flex-wrap: wrap !important; gap: 8px !important; }
+
+          /* Main content padding */
+          .dash-root { padding: 14px 1rem !important; }
+
+          /* Stat cards — 2 col */
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+          .stat-card { padding: 16px !important; }
+          .stat-card svg { display: none !important; } /* hide sparkline on mobile */
+
+          /* Quick actions — 2 col */
+          .qa-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+          .quick-action { padding: 10px 12px !important; font-size: 12px !important; }
+          .quick-action .qa-icon { width: 30px !important; height: 30px !important; font-size: 15px !important; }
+
+          /* Main grid — single col */
+          .main-grid { grid-template-columns: 1fr !important; }
+
+          /* Patients grid — single col */
+          .patients-grid { grid-template-columns: 1fr !important; }
+
+          /* Section header — wrap */
+          .section-header { flex-wrap: wrap !important; gap: 8px !important; }
+
+          /* Footer — stack */
+          .dash-footer { flex-direction: column !important; gap: 10px !important; }
+          .dash-footer-metrics { flex-wrap: wrap !important; gap: 12px !important; }
+
+          /* Modal — bottom sheet */
+          .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+          .modal-box { width: 100% !important; max-width: 100% !important; border-radius: 20px 20px 0 0 !important; max-height: 95vh !important; }
+
+          /* Modal form grid — single col */
+          .modal-form-grid { grid-template-columns: 1fr !important; }
+
+          /* Overdue banner */
+          .overdue-banner { flex-direction: column !important; }
+        }
+
+        /* ── DESKTOP ENHANCEMENTS ── */
+        @media (min-width: 1400px) {
+          .dash-root { padding: 28px 3rem !important; }
+          .stats-grid { grid-template-columns: repeat(4, 1fr) !important; }
+          .qa-grid { grid-template-columns: repeat(4, 1fr) !important; }
+          .main-grid { grid-template-columns: 1.6fr 1fr !important; }
+        }
       `}</style>
 
       {/* ── Top Navigation Header ─────────────────────────────────────────── */}
       <div className="glass-header" style={{ padding: "0 2rem" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: "64px" }}>
+        <div className="dash-nav-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: "64px" }}>
           {/* Logo + title */}
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
             <div style={{
@@ -563,7 +654,7 @@ export default function Dashboard() {
           </nav>
 
           {/* Right side */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div className="dash-right-row" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div className="search-wrap" ref={searchRef}>
               <span className="search-icon">🔍</span>
               <input
@@ -607,23 +698,31 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-            <button className="register-btn" onClick={() => setShowAddPatient(true)}>
-              <span style={{ fontSize: "16px" }}>＋</span> Register Patient
+            <button className="register-btn"
+              onClick={() => setShowAddPatient(true)}
+              disabled={isOffline}
+              title={isOffline ? "Cannot register patient while offline" : ""}
+              style={{ opacity: isOffline ? 0.5 : 1, cursor: isOffline ? "not-allowed" : "pointer" }}
+            >
+              <span style={{ fontSize: "16px" }}>{isOffline ? "📵" : "＋"}</span>
+              {isOffline ? "Offline" : "Register Patient"}
             </button>
           </div>
         </div>
       </div>
 
       {/* ── Sub-header: Doctor info + time ───────────────────────────────── */}
-      <div style={{
+      <div className="dash-subheader" style={{
         background: "white", borderBottom: "1px solid #e8edf2",
         padding: "12px 2rem",
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+        <div className="dash-subheader-left" style={{ display: "flex", alignItems: "center", gap: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <div className="live-dot" />
-            <span style={{ fontSize: "12px", color: "#059669", fontWeight: "600" }}>System Online</span>
+            <div className="live-dot" style={{ background: isOffline ? "#f59e0b" : "#10b981" }} />
+            <span style={{ fontSize: "12px", color: isOffline ? "#d97706" : "#059669", fontWeight: "600" }}>
+              {isOffline ? "⚠ Offline" : "System Online"}
+            </span>
           </div>
           <div style={{ width: "1px", height: "16px", background: "#e2e8f0" }} />
           <span style={{ fontSize: "13px", color: "#4a5568", fontWeight: "500" }}>
@@ -641,6 +740,21 @@ export default function Dashboard() {
 
       {/* ── Main Content ─────────────────────────────────────────────────── */}
       <div className="dash-root" style={{ padding: "24px 2rem", maxWidth: "1600px", margin: "0 auto" }}>
+
+        {/* ── Cache notice ── */}
+        {fromCache && cacheTime && (
+          <div style={{
+            background: "#fffbeb", border: "1px solid #fcd34d",
+            borderLeft: "4px solid #d97706",
+            borderRadius: "10px", padding: "10px 16px",
+            fontSize: "12px", color: "#92400e", fontWeight: "500",
+            display: "flex", alignItems: "center", gap: "8px",
+            marginBottom: "16px",
+          }}>
+            <span style={{ fontSize: "16px" }}>📋</span>
+            <span>Showing cached data from <strong>{cacheTime}</strong> — connect to internet to refresh</span>
+          </div>
+        )}
 
         {/* ── Overdue Banner ── */}
         {overdueList.length > 0 && !dismissOverdue && (
@@ -747,7 +861,7 @@ export default function Dashboard() {
 
             {/* Schedule Tab */}
             {activeTab === "schedule" && (
-              <div style={{ overflowX: "auto" }}>
+              <div className="appt-table-wrap" style={{ overflowX: "auto" }}>
                 {todaysList.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "48px 20px", color: "#b0bec5" }}>
                     <div style={{ fontSize: "40px", marginBottom: "10px" }}>📭</div>
@@ -820,7 +934,7 @@ export default function Dashboard() {
                     <div style={{ fontSize: "13px" }}>{searchQuery ? "No patients match your search" : "No patients found"}</div>
                   </div>
                 ) : (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                  <div className="patients-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
                     {filteredPatients.map(p => {
                       const colors = ["#e8f0fe:#1e40af", "#d1fae5:#065f46", "#ede9fe:#6d28d9", "#fef3c7:#92400e"];
                       const [bg, fg] = colors[p.name?.charCodeAt(0) % 4].split(":");
@@ -896,11 +1010,11 @@ export default function Dashboard() {
         </div>
 
         {/* ── Footer Info ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderTop: "1px solid #e8edf2" }}>
+        <div className="dash-footer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderTop: "1px solid #e8edf2" }}>
           <div style={{ fontSize: "11px", color: "#b0bec5" }}>
             {hospitalConfig.dashboardTitle} · Clinic EMR v2.0
           </div>
-          <div style={{ display: "flex", gap: "16px" }}>
+          <div className="dash-footer-metrics" style={{ display: "flex", gap: "16px" }}>
             {[
               { label: "Total Records", value: stats.totalPatients },
               { label: "Today's Load", value: stats.todaysAppointments },
@@ -944,7 +1058,7 @@ export default function Dashboard() {
                 )}
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div className="modal-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                 <input placeholder="Phone Number *" style={inp} value={newPatient.phone} onChange={e => setNewPatient({ ...newPatient, phone: e.target.value })} />
                 <select style={inp} value={newPatient.blood_group} onChange={e => setNewPatient({ ...newPatient, blood_group: e.target.value })}>
                   <option value="">Blood Group</option>

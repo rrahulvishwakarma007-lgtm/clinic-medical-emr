@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import hospitalConfig from "@/config/hospital";
+import { fetchWithCache, CACHE_KEYS } from "@/lib/offlineCache";
+import { useOffline } from "@/hooks/useOffline";
 
 const DOSAGE_PRESETS = ["1-0-1", "1-1-1", "0-0-1", "1-0-0", "0-1-0", "SOS", "Once daily", "Twice daily"];
 const DURATION_PRESETS = ["3 days", "5 days", "7 days", "10 days", "14 days", "1 month"];
@@ -14,6 +16,9 @@ export default function PatientProfile() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
+  const isOffline = useOffline();
+  const [fromCache, setFromCache] = useState(false);
+  const [cacheTime, setCacheTime] = useState<string | null>(null);
   const [patient, setPatient] = useState<any>(null);
   const [tab, setTab] = useState("overview");
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
@@ -30,14 +35,20 @@ export default function PatientProfile() {
   async function loadData() {
     setLoading(true);
     try {
-      const [pRes, prRes] = await Promise.all([fetch("/api/patients"), fetch("/api/prescriptions")]);
-      const pResult = await pRes.json();
-      const prData = await prRes.json();
-      if (pResult.success) {
+      const [
+        { data: pResult, fromCache: cached, cacheTime: ct },
+        { data: prData },
+      ] = await Promise.all([
+        fetchWithCache("/api/patients",      CACHE_KEYS.patients),
+        fetchWithCache("/api/prescriptions", CACHE_KEYS.prescriptions),
+      ]);
+      if (pResult?.success) {
         const found = pResult.data.find((p: any) => String(p.id) === String(id));
         if (found) { setPatient(found); setEditForm({ name: found.name, age: found.age, phone: found.phone, address: found.address, blood_group: found.blood_group, type: found.type }); }
       }
       if (Array.isArray(prData)) setPrescriptions(prData.filter((pr: any) => String(pr.patient_id) === String(id)));
+      setFromCache(cached);
+      setCacheTime(ct);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }
@@ -193,12 +204,30 @@ export default function PatientProfile() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
               Back to Patients
             </button>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setShowEdit(true)} className="btn-edit">
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" as const }}>
+              {/* Cache notice */}
+              {fromCache && cacheTime && (
+                <span style={{ fontSize: "11px", color: "#fcd34d", background: "rgba(252,211,77,0.1)", border: "1px solid rgba(252,211,77,0.2)", borderRadius: "20px", padding: "4px 10px" }}>
+                  📋 Cached · {cacheTime}
+                </span>
+              )}
+              <button
+                onClick={() => setShowEdit(true)}
+                className="btn-edit"
+                disabled={isOffline}
+                title={isOffline ? "Cannot edit while offline" : ""}
+                style={{ opacity: isOffline ? 0.45 : 1, cursor: isOffline ? "not-allowed" : "pointer" }}
+              >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Edit Patient
+                {isOffline ? "📵 Offline" : "Edit Patient"}
               </button>
-              <button onClick={() => setTab("prescribe")} className="btn-rx">
+              <button
+                onClick={() => setTab("prescribe")}
+                className="btn-rx"
+                disabled={isOffline}
+                title={isOffline ? "Cannot write prescription while offline" : ""}
+                style={{ opacity: isOffline ? 0.45 : 1, cursor: isOffline ? "not-allowed" : "pointer" }}
+              >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 New Prescription
               </button>
@@ -371,8 +400,9 @@ export default function PatientProfile() {
                     <textarea className="form-textarea" placeholder="e.g. Take after food. Avoid cold drinks. Rest for 2 days." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
                   </div>
 
-                  <button onClick={savePrescription} disabled={isSaving} className="btn-save-rx">
-                    {isSaving ? "Saving Prescription..." : "Save & View Prescription"}
+                  <button onClick={savePrescription} disabled={isSaving || isOffline} className="btn-save-rx"
+                    title={isOffline ? "Cannot save prescription while offline" : ""}>
+                    {isOffline ? "📵 Offline — Cannot Save" : isSaving ? "Saving Prescription..." : "Save & View Prescription"}
                   </button>
                 </div>
               </div>

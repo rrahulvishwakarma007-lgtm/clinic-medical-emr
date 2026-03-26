@@ -1,25 +1,68 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import SidebarNav from "@/components/SidebarNav";
 import hospitalConfig from "@/config/hospital";
 import VoiceAssistant from "@/components/VoiceAssistant";
+import VoiceDiagnosis from "@/components/VoiceDiagnosis";
+import PinLock from "@/components/PinLock";
+import OfflineBanner from "@/components/OfflineBanner";
+
+// Pages that don't need auth or sidebar
+const PUBLIC_PATHS = ["/login", "/welcome", "/print-preview", "/opd-token"];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
+  const [checked, setChecked] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
+    const isPublic = PUBLIC_PATHS.some(p => pathname?.startsWith(p));
+
+    if (isPublic) {
+      // Public page — no auth needed, just render
+      setChecked(true);
+      return;
+    }
+
+    // Protected page — check login
+    const user = localStorage.getItem("clinic_user");
+    if (!user) {
+      router.replace("/login");
+      return;
+    }
+
+    setIsAuthed(true);
+    setChecked(true);
+
     function checkMobile() {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-      setOpen(!mobile); // open by default on desktop, closed on mobile
+      setOpen(!mobile);
     }
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  }, [pathname]);
 
+  // Still checking auth — show spinner briefly
+  if (!checked) return (
+    <div style={{ minHeight:"100vh", background:"#060d1a", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ width:"36px", height:"36px", border:"3px solid #1e3a5f", borderTopColor:"#3b82f6", borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+
+  // Public page — render without sidebar or PIN
+  const isPublic = PUBLIC_PATHS.some(p => pathname?.startsWith(p));
+  if (isPublic) return <>{children}</>;
+
+  // Authed — render full app with sidebar + PIN lock
   return (
+    <PinLock>
     <div style={{ display: "flex", minHeight: "100vh", background: "#f0f4f8", position: "relative" }}>
 
       {/* Overlay — mobile only, closes sidebar when tapping outside */}
@@ -133,6 +176,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Voice Assistant */}
       <VoiceAssistant />
+
+      {/* Voice Diagnosis */}
+      <VoiceDiagnosis />
+
+      {/* Offline Banner */}
+      <OfflineBanner />
     </div>
+    </PinLock>
   );
 }
