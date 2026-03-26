@@ -4,7 +4,6 @@ import AppShell from "@/components/AppShell";
 import hospitalConfig from "@/config/hospital";
 import { Noto_Sans_Devanagari } from "next/font/google";
 
-// ✅ Load Hindi font properly via next/font (no hydration error)
 const notoDevanagari = Noto_Sans_Devanagari({
   subsets: ["devanagari"],
   weight: ["400", "600", "700"],
@@ -14,7 +13,6 @@ const notoDevanagari = Noto_Sans_Devanagari({
 export const metadata = {
   title: hospitalConfig.appName,
   description: `${hospitalConfig.name} EMR Dashboard`,
-  // ✅ Viewport moved here (not in <head> manually)
   viewport: {
     width: "device-width",
     initialScale: 1,
@@ -27,9 +25,8 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={notoDevanagari.variable}>
+    <html lang="en" className={notoDevanagari.className}>  {/* ✅ .className not .variable */}
       <head>
-        {/* ✅ Mobile WebView meta tags — safe to add here */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
