@@ -25,7 +25,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={notoDevanagari.className}>  {/* ✅ .className not .variable */}
+    <html lang="en" className={notoDevanagari.className}>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
