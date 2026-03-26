@@ -1,4 +1,3 @@
-// capacitor.config.js
 /** @type {import('@capacitor/cli').CapacitorConfig} */
 const config = {
   appId: 'com.medicare.emr',
@@ -6,9 +5,9 @@ const config = {
   webDir: 'out',
 
   server: {
-    url: 'https://clinic-medical-emr.vercel.app', // ✅ your URL stays same
+    url: 'https://clinic-medical-emr.vercel.app', // ✅ your Vercel URL
     androidScheme: 'https',
-    cleartext: false, // ✅ changed to false (HTTPS is secure, no need for cleartext)
+    cleartext: false,
   },
 
   android: {
@@ -16,17 +15,13 @@ const config = {
   },
 
   plugins: {
-    // ✅ HTTP requests via Capacitor (faster than fetch in WebView)
-    CapacitorHttp: {
-      enabled: true,
-    },
+    // ✅ HTTP
+    CapacitorHttp: { enabled: true },
 
-    // ✅ @capacitor/browser — open links in in-app browser
-    Browser: {
-      presentationStyle: 'popover',
-    },
+    // ✅ Open links in-app browser
+    Browser: { presentationStyle: 'popover' },
 
-    // ✅ Status bar — matches your navy blue theme
+    // ✅ Status bar — navy blue
     StatusBar: {
       style: 'dark',
       backgroundColor: '#0d1b2e',
@@ -40,10 +35,26 @@ const config = {
       showSpinner: false,
     },
 
-    // ✅ Keyboard — prevents content being hidden behind keyboard
+    // ✅ Keyboard doesn't hide content
     Keyboard: {
       resize: 'body',
       resizeOnFullScreen: true,
+    },
+
+    // ✅ Local notifications for follow-up reminders
+    LocalNotifications: {
+      smallIcon: 'ic_stat_icon_config_sample',
+      iconColor: '#0f4c81',
+    },
+
+    // ✅ Push notifications
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
+
+    // ✅ Save files (reports, prescriptions PDF)
+    Filesystem: {
+      directory: 'DOCUMENTS',
     },
   },
 };

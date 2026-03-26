@@ -9,7 +9,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:hardwareAccelerated="true"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="false">
 
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
@@ -37,18 +37,39 @@
 
     </application>
 
-    <!-- ✅ Already had this -->
+    <!-- ✅ Internet -->
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- ✅ ADD THESE -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- ✅ Maya voice assistant -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <!-- ✅ TTS (text to speech - OPD announcements) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!-- ✅ WhatsApp / phone -->
     <uses-permission android:name="android.permission.CALL_PHONE" />
-    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- ✅ Camera (document scan) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- ✅ Storage (save PDFs, reports) -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <!-- ✅ Notifications (follow-up reminders) -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- ✅ Vibration -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- ✅ Keep screen on -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
 </manifest>
