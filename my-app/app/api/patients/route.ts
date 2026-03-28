@@ -1,10 +1,14 @@
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 function calcAge(dob: string): number {
   const d = new Date(dob);
@@ -17,7 +21,7 @@ function calcAge(dob: string): number {
 
 export async function GET() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("patients")
       .select("*")
       .order("id", { ascending: false });
@@ -33,7 +37,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     // Auto-calculate age from dob
     if (body.dob) body.age = calcAge(body.dob);
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("patients")
       .insert([body])
       .select();
@@ -51,7 +55,7 @@ export async function PATCH(req: Request) {
     if (!id) return NextResponse.json({ success: false, error: "Missing patient ID" }, { status: 400 });
     // Recalculate age if dob is being updated
     if (updateData.dob) updateData.age = calcAge(updateData.dob);
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("patients")
       .update(updateData)
       .eq("id", id)
