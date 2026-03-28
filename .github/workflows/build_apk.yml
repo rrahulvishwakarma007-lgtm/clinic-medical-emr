@@ -1,83 +1,53 @@
-name: Build Android APK
+name: Build APK
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch: # allows manual trigger from GitHub
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout code
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Setup Node.js
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: my-app/package-lock.json
+          node-version: 18
 
-      # 3. Setup Java (required for Android build)
-      - name: Setup Java 17
+      - name: Install dependencies
+        run: npm install
+        working-directory: my-app
+
+      - name: Build Next.js
+        run: npm run build
+        working-directory: my-app
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+        working-directory: my-app
+
+      # 🔥 ADD THIS (missing part)
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
           distribution: 'temurin'
+          java-version: '17'
 
-      # 4. Setup Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # 5. Install dependencies
-      - name: Install dependencies
-        working-directory: my-app
-        run: npm install
+      - name: Build APK
+        run: |
+          cd my-app/android
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
-      # 6. Build Next.js app
-      - name: Build Next.js (static export)
-        working-directory: my-app
-        run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-
-      # 7. Sync Capacitor
-      - name: Capacitor sync
-        working-directory: my-app
-        run: npx cap sync android
-
-      # 8. Make gradlew executable
-      - name: Make gradlew executable
-        working-directory: my-app/android
-        run: chmod +x gradlew
-
-      # 9. Build debug APK (no signing needed)
-      - name: Build Debug APK
-        working-directory: my-app/android
-        run: ./gradlew assembleDebug
-
-      # 10. Upload APK as artifact
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: clinic-emr-debug-apk
+          name: app-debug
           path: my-app/android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
-
-      # Optional: Also create a GitHub Release with the APK
-      - name: Create Release
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: build-${{ github.run_number }}
-          name: "APK Build #${{ github.run_number }}"
-          body: "Automated APK build from commit ${{ github.sha }}"
-          files: my-app/android/app/build/outputs/apk/debug/app-debug.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
