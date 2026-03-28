@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -57,14 +60,14 @@ jobs:
         working-directory: my-app/android
         run: ./gradlew assembleDebug
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: clinic-emr-debug-apk
           path: my-app/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      - name: Create Release
+      - name: Create GitHub Release
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
