@@ -1,4 +1,5 @@
 "use client";
+import { TextToSpeech } from "@capacitor-community/text-to-speech";
 // app/opd/page.tsx  — Doctor's OPD Queue Management
 import { useState, useEffect } from "react";
 import hospitalConfig from "@/config/hospital";
@@ -82,85 +83,54 @@ export default function OpdPage() {
   }
 
   // ── Voice Announcement ──────────────────────────────────────
-  // Load ResponsiveVoice script once — works in Android WebView
-  function loadResponsiveVoice(): Promise<void> {
-    return new Promise((resolve) => {
-      if ((window as any).responsiveVoice) { resolve(); return; }
-      const script = document.createElement("script");
-      script.src = "https://code.responsivevoice.org/responsivevoice.js?key=FREE";
-      script.onload = () => resolve();
-      script.onerror = () => resolve(); // resolve anyway, will fallback
-      document.head.appendChild(script);
-    });
+  function playChime(token: number, name: string) {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const times = [0, 0.3, 0.6];
+      const freqs = [523, 659, 784]; // C-E-G chord
+      times.forEach((t, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freqs[i];
+        osc.type = "sine";
+        gain.gain.setValueAtTime(0.4, ctx.currentTime + t);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + t + 0.5);
+        osc.start(ctx.currentTime + t);
+        osc.stop(ctx.currentTime + t + 0.5);
+      });
+    } catch {}
+    setAnnouncing(false);
   }
 
   async function announce(token: number, name: string) {
     if (!announcementOn) return;
     setAnnouncing(true);
-    setLastAnnounced(`Token #${token} — ${name}`);
-
-    const hindiText  = `टोकन नंबर ${token}। ${name}। कृपया डॉक्टर के कमरे में आएं।`;
+    const hindiText = `टोकन नंबर ${token}। ${name}। कृपया डॉक्टर के कमरे में आएं।`;
     const englishText = `Token number ${token}. ${name}. Please come to the doctor room.`;
-
-    // Load ResponsiveVoice (works in Android WebView)
-    await loadResponsiveVoice();
-
-    const rv = (window as any).responsiveVoice;
-    if (rv) {
-      // Try Hindi first
-      rv.speak(hindiText, "Hindi Female", {
-        rate: 0.85,
-        pitch: 1,
-        volume: 1,
-        onstart: () => setAnnouncing(true),
-        onend: () => setAnnouncing(false),
-        onerror: () => {
-          // Fallback to English
-          rv.speak(englishText, "UK English Female", {
-            rate: 0.85, volume: 1,
-            onend: () => setAnnouncing(false),
-            onerror: () => { setAnnouncing(false); playChime(token, name); },
-          });
-        },
-      });
-      return;
+    setLastAnnounced(`Token #${token} — ${name}`);
+    try {
+      await TextToSpeech.speak({ text: hindiText, lang: "hi-IN", rate: 0.85, pitch: 1.0, volume: 1.0, category: "ambient" });
+      setAnnouncing(false); return;
+    } catch (e) {
+      try {
+        await TextToSpeech.speak({ text: englishText, lang: "en-IN", rate: 0.85, pitch: 1.0, volume: 1.0, category: "ambient" });
+        setAnnouncing(false); return;
+      } catch (e2) {}
     }
-
-    // Fallback: Web Speech API
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const voices = window.speechSynthesis.getVoices();
-      const hindiVoice = voices.find(v => v.lang.startsWith("hi"));
+      const hindiVoice = voices.find((v: any) => v.lang.startsWith("hi"));
       const u = new SpeechSynthesisUtterance(hindiVoice ? hindiText : englishText);
       if (hindiVoice) u.voice = hindiVoice;
       u.lang = hindiVoice ? "hi-IN" : "en-IN";
       u.rate = 0.82; u.volume = 1;
       u.onend = () => setAnnouncing(false);
       u.onerror = () => { setAnnouncing(false); playChime(token, name); };
-      window.speechSynthesis.speak(u);
-      return;
+      window.speechSynthesis.speak(u); return;
     }
-
     playChime(token, name);
-  }
-
-  function playChime(token: number, name: string) {
-    // PA system chime + repeat attempt
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      [523, 659, 784].forEach((freq, i) => {
-        const osc  = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.frequency.value = freq; osc.type = "sine";
-        const t = ctx.currentTime + i * 0.22;
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
-        gain.gain.linearRampToValueAtTime(0, t + 0.28);
-        osc.start(t); osc.stop(t + 0.3);
-      });
-    } catch {}
-    setAnnouncing(false);
   }
 
   function repeatAnnouncement() {
