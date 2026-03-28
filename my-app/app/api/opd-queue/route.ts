@@ -2,10 +2,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+export const dynamic = "force-dynamic";
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 const today = () => new Date().toISOString().split("T")[0];
 
@@ -16,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   if (tokenId) {
     // Patient checking their own position
-    const { data: entry } = await supabase
+    const { data: entry } = await getSupabase()
       .from("opd_queue")
       .select("*")
       .eq("id", tokenId)
@@ -25,7 +29,7 @@ export async function GET(req: NextRequest) {
     if (!entry) return NextResponse.json({ error: "Token not found" }, { status: 404 });
 
     // Count patients waiting ahead
-    const { count: waitingAhead } = await supabase
+    const { count: waitingAhead } = await getSupabase()
       .from("opd_queue")
       .select("*", { count: "exact", head: true })
       .eq("queue_date", today())
@@ -33,7 +37,7 @@ export async function GET(req: NextRequest) {
       .lt("token", entry.token);
 
     // Get currently serving token
-    const { data: calledEntry } = await supabase
+    const { data: calledEntry } = await getSupabase()
       .from("opd_queue")
       .select("token")
       .eq("queue_date", today())
@@ -42,7 +46,7 @@ export async function GET(req: NextRequest) {
       .limit(1)
       .single();
 
-    const { count: totalWaiting } = await supabase
+    const { count: totalWaiting } = await getSupabase()
       .from("opd_queue")
       .select("*", { count: "exact", head: true })
       .eq("queue_date", today())
@@ -59,13 +63,13 @@ export async function GET(req: NextRequest) {
   }
 
   // Doctor view — full queue for today
-  const { data: queue } = await supabase
+  const { data: queue } = await getSupabase()
     .from("opd_queue")
     .select("*")
     .eq("queue_date", today())
     .order("token", { ascending: true });
 
-  const { data: calledEntry } = await supabase
+  const { data: calledEntry } = await getSupabase()
     .from("opd_queue")
     .select("token")
     .eq("queue_date", today())
@@ -96,7 +100,7 @@ export async function POST(req: NextRequest) {
     if (!name) return NextResponse.json({ error: "Name required" }, { status: 400 });
 
     // Get next token number for today
-    const { data: last } = await supabase
+    const { data: last } = await getSupabase()
       .from("opd_queue")
       .select("token")
       .eq("queue_date", today())
@@ -106,7 +110,7 @@ export async function POST(req: NextRequest) {
 
     const nextToken = (last?.token || 0) + 1;
 
-    const { data: entry, error } = await supabase
+    const { data: entry, error } = await getSupabase()
       .from("opd_queue")
       .insert({
         token: nextToken,
@@ -120,14 +124,14 @@ export async function POST(req: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     // Count waiting ahead
-    const { count: waitingAhead } = await supabase
+    const { count: waitingAhead } = await getSupabase()
       .from("opd_queue")
       .select("*", { count: "exact", head: true })
       .eq("queue_date", today())
       .eq("status", "waiting")
       .lt("token", nextToken);
 
-    const { data: calledEntry } = await supabase
+    const { data: calledEntry } = await getSupabase()
       .from("opd_queue")
       .select("token")
       .eq("queue_date", today())
@@ -149,14 +153,14 @@ export async function POST(req: NextRequest) {
   // ── Doctor calls next patient ──
   if (body.action === "call_next") {
     // Mark any currently called as done first
-    await supabase
+    await getSupabase()
       .from("opd_queue")
       .update({ status: "done", done_at: new Date().toISOString() })
       .eq("queue_date", today())
       .eq("status", "called");
 
     // Get next waiting patient
-    const { data: next } = await supabase
+    const { data: next } = await getSupabase()
       .from("opd_queue")
       .select("*")
       .eq("queue_date", today())
@@ -167,7 +171,7 @@ export async function POST(req: NextRequest) {
 
     if (!next) return NextResponse.json({ error: "No patients waiting" }, { status: 400 });
 
-    await supabase
+    await getSupabase()
       .from("opd_queue")
       .update({ status: "called", called_at: new Date().toISOString() })
       .eq("id", next.id);
@@ -177,7 +181,7 @@ export async function POST(req: NextRequest) {
 
   // ── Doctor marks current as done ──
   if (body.action === "mark_done") {
-    await supabase
+    await getSupabase()
       .from("opd_queue")
       .update({ status: "done", done_at: new Date().toISOString() })
       .eq("id", body.id);
@@ -186,7 +190,7 @@ export async function POST(req: NextRequest) {
 
   // ── Doctor resets queue ──
   if (body.action === "reset") {
-    await supabase
+    await getSupabase()
       .from("opd_queue")
       .delete()
       .eq("queue_date", today());
