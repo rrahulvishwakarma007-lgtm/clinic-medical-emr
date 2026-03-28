@@ -1,0 +1,47 @@
+ Task :capacitor-network:processDebugJavaRes NO-SOURCE
+> Task :capacitor-preferences:processDebugJavaRes NO-SOURCE
+> Task :capacitor-push-notifications:processDebugJavaRes NO-SOURCE
+> Task :capacitor-share:processDebugJavaRes NO-SOURCE
+> Task :capacitor-splash-screen:processDebugJavaRes NO-SOURCE
+> Task :capacitor-status-bar:processDebugJavaRes NO-SOURCE
+> Task :capacitor-community-text-to-speech:bundleLibRuntimeToDirDebug
+> Task :app:checkDebugDuplicateClasses
+
+> Task :capacitor-filesystem:compileDebugKotlin
+w: file:///home/runner/work/clinic-medical-emr/clinic-medical-emr/my-app/node_modules/@capacitor/filesystem/android/src/main/kotlin/com/capacitorjs/plugins/filesystem/FilesystemPlugin.kt:335:31 'fun downloadFile(call: PluginCall): Unit' is deprecated. Use @capacitor/file-transfer plugin instead.
+w: file:///home/runner/work/clinic-medical-emr/clinic-medical-emr/my-app/node_modules/@capacitor/filesystem/android/src/main/kotlin/com/capacitorjs/plugins/filesystem/LegacyFilesystemImplementation.kt:66:29 Java type mismatch: inferred type is 'String?', but 'String' was expected.
+
+> Task :app:mergeExtDexDebug
+> Task :capacitor-filesystem:compileDebugJavaWithJavac NO-SOURCE
+> Task :capacitor-filesystem:bundleLibCompileToJarDebug
+> Task :capacitor-filesystem:bundleLibRuntimeToJarDebug
+> Task :capacitor-filesystem:processDebugJavaRes
+/home/runner/work/clinic-medical-emr/clinic-medical-emr/my-app/android/app/src/main/java/com/medicare/emr/MainActivity.java:21: error: onStart() in MainActivity cannot override onStart() in BridgeActivity
+
+    protected void onStart() {
+> Task :app:compileDebugJavaWithJavac FAILED
+                   ^
+  attempting to assign weaker access privileges; was public
+1 error
+
+[Incubating] Problems report is available at: file:///home/runner/work/clinic-medical-emr/clinic-medical-emr/my-app/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugJavaWithJavac'.
+> Compilation failed; see the compiler output below.
+  /home/runner/work/clinic-medical-emr/clinic-medical-emr/my-app/android/app/src/main/java/com/medicare/emr/MainActivity.java:21: error: onStart() in MainActivity cannot override onStart() in BridgeActivity
+      protected void onStart() {
+                     ^
+    attempting to assign weaker access privileges; was public
+  1 error
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to get full insights.
+312 actionable tasks: 312 executed
+
+BUILD FAILED in 2m 6s
+Error: Process completed with exit code 1.
+0s
