@@ -1,0 +1,281 @@
+1s
+0s
+1m 12s
+Run ./gradlew assembleDebug
+Downloading https://services.gradle.org/distributions/gradle-8.14.3-all.zip
+.....................10%.....................20%......................30%.....................40%......................50%.....................60%.....................70%......................80%.....................90%......................100%
+
+Welcome to Gradle 8.14.3!
+
+Here are the highlights of this release:
+ - Java 24 support
+ - GraalVM Native Image toolchain selection
+ - Enhancements to test reporting
+ - Build Authoring improvements
+
+For more details see https://docs.gradle.org/8.14.3/release-notes.html
+
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+> Configure project :app
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Configure project :capacitor-cordova-android-plugins
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :capacitor-android:preBuild UP-TO-DATE
+> Task :capacitor-android:preDebugBuild UP-TO-DATE
+> Task :capacitor-app:preBuild UP-TO-DATE
+> Task :capacitor-app:preDebugBuild UP-TO-DATE
+> Task :capacitor-android:writeDebugAarMetadata
+> Task :capacitor-browser:preBuild UP-TO-DATE
+> Task :capacitor-browser:preDebugBuild UP-TO-DATE
+> Task :capacitor-app:writeDebugAarMetadata
+> Task :app:javaPreCompileDebug
+> Task :capacitor-camera:preBuild UP-TO-DATE
+> Task :capacitor-camera:preDebugBuild UP-TO-DATE
+> Task :capacitor-browser:writeDebugAarMetadata
+> Task :capacitor-clipboard:preBuild UP-TO-DATE
+> Task :capacitor-clipboard:preDebugBuild UP-TO-DATE
+> Task :capacitor-camera:writeDebugAarMetadata
+> Task :capacitor-community-text-to-speech:preBuild UP-TO-DATE
+> Task :capacitor-clipboard:writeDebugAarMetadata
+> Task :capacitor-community-text-to-speech:preDebugBuild UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:preBuild UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:preDebugBuild UP-TO-DATE
+> Task :capacitor-community-text-to-speech:writeDebugAarMetadata
+> Task :capacitor-device:preBuild UP-TO-DATE
+> Task :capacitor-device:preDebugBuild UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:writeDebugAarMetadata
+> Task :capacitor-filesystem:preBuild UP-TO-DATE
+> Task :capacitor-filesystem:preDebugBuild UP-TO-DATE
+> Task :capacitor-haptics:preBuild UP-TO-DATE
+> Task :capacitor-haptics:preDebugBuild UP-TO-DATE
+> Task :capacitor-device:writeDebugAarMetadata
+> Task :capacitor-filesystem:writeDebugAarMetadata
+> Task :capacitor-keyboard:preBuild UP-TO-DATE
+> Task :capacitor-keyboard:preDebugBuild UP-TO-DATE
+> Task :capacitor-haptics:writeDebugAarMetadata
+> Task :capacitor-local-notifications:preBuild UP-TO-DATE
+> Task :capacitor-local-notifications:preDebugBuild UP-TO-DATE
+> Task :capacitor-keyboard:writeDebugAarMetadata
+> Task :capacitor-network:preBuild UP-TO-DATE
+> Task :capacitor-network:preDebugBuild UP-TO-DATE
+> Task :capacitor-local-notifications:writeDebugAarMetadata
+> Task :capacitor-preferences:preBuild UP-TO-DATE
+> Task :capacitor-preferences:preDebugBuild UP-TO-DATE
+> Task :capacitor-network:writeDebugAarMetadata
+> Task :capacitor-preferences:writeDebugAarMetadata
+> Task :capacitor-push-notifications:preBuild UP-TO-DATE
+> Task :capacitor-push-notifications:preDebugBuild UP-TO-DATE
+> Task :capacitor-share:preBuild UP-TO-DATE
+> Task :capacitor-share:preDebugBuild UP-TO-DATE
+> Task :capacitor-push-notifications:writeDebugAarMetadata
+> Task :capacitor-splash-screen:preBuild UP-TO-DATE
+> Task :capacitor-splash-screen:preDebugBuild UP-TO-DATE
+> Task :capacitor-share:writeDebugAarMetadata
+> Task :capacitor-status-bar:preBuild UP-TO-DATE
+> Task :capacitor-status-bar:preDebugBuild UP-TO-DATE
+> Task :capacitor-splash-screen:writeDebugAarMetadata
+> Task :capacitor-status-bar:writeDebugAarMetadata
+> Task :capacitor-android:processDebugNavigationResources
+> Task :capacitor-app:processDebugNavigationResources
+> Task :capacitor-browser:processDebugNavigationResources
+> Task :capacitor-camera:processDebugNavigationResources
+> Task :app:checkDebugAarMetadata
+> Task :capacitor-clipboard:processDebugNavigationResources
+> Task :capacitor-community-text-to-speech:processDebugNavigationResources
+> Task :capacitor-cordova-android-plugins:processDebugNavigationResources
+> Task :capacitor-device:processDebugNavigationResources
+> Task :capacitor-filesystem:processDebugNavigationResources
+> Task :capacitor-haptics:processDebugNavigationResources
+> Task :capacitor-keyboard:processDebugNavigationResources
+> Task :capacitor-local-notifications:processDebugNavigationResources
+> Task :capacitor-network:processDebugNavigationResources
+> Task :capacitor-preferences:processDebugNavigationResources
+> Task :capacitor-push-notifications:processDebugNavigationResources
+> Task :capacitor-share:processDebugNavigationResources
+> Task :capacitor-splash-screen:processDebugNavigationResources
+> Task :capacitor-status-bar:processDebugNavigationResources
+> Task :app:processDebugNavigationResources
+> Task :app:compileDebugNavigationResources
+> Task :app:generateDebugResValues
+> Task :capacitor-android:generateDebugResValues
+> Task :capacitor-android:generateDebugResources
+> Task :capacitor-android:packageDebugResources
+> Task :capacitor-app:generateDebugResValues
+> Task :capacitor-app:generateDebugResources
+> Task :capacitor-app:packageDebugResources
+> Task :capacitor-browser:generateDebugResValues
+> Task :capacitor-browser:generateDebugResources
+> Task :capacitor-browser:packageDebugResources
+> Task :capacitor-camera:generateDebugResValues
+> Task :capacitor-camera:generateDebugResources
+> Task :capacitor-camera:packageDebugResources
+> Task :capacitor-clipboard:generateDebugResValues
+> Task :capacitor-clipboard:generateDebugResources
+> Task :capacitor-clipboard:packageDebugResources
+> Task :capacitor-community-text-to-speech:generateDebugResValues
+> Task :capacitor-community-text-to-speech:generateDebugResources
+> Task :capacitor-community-text-to-speech:packageDebugResources
+> Task :capacitor-cordova-android-plugins:generateDebugResValues
+> Task :capacitor-cordova-android-plugins:generateDebugResources
+> Task :capacitor-cordova-android-plugins:packageDebugResources
+> Task :capacitor-device:generateDebugResValues
+> Task :capacitor-device:generateDebugResources
+> Task :capacitor-device:packageDebugResources
+> Task :capacitor-filesystem:generateDebugResValues
+> Task :capacitor-filesystem:generateDebugResources
+> Task :capacitor-filesystem:packageDebugResources
+> Task :capacitor-haptics:generateDebugResValues
+> Task :capacitor-haptics:generateDebugResources
+> Task :capacitor-haptics:packageDebugResources
+> Task :capacitor-keyboard:generateDebugResValues
+> Task :capacitor-keyboard:generateDebugResources
+> Task :capacitor-keyboard:packageDebugResources
+> Task :capacitor-local-notifications:generateDebugResValues
+> Task :capacitor-local-notifications:generateDebugResources
+> Task :capacitor-local-notifications:packageDebugResources
+> Task :capacitor-network:generateDebugResValues
+> Task :capacitor-network:generateDebugResources
+> Task :capacitor-network:packageDebugResources
+> Task :capacitor-preferences:generateDebugResValues
+> Task :capacitor-preferences:generateDebugResources
+> Task :capacitor-preferences:packageDebugResources
+> Task :capacitor-push-notifications:generateDebugResValues
+> Task :capacitor-push-notifications:generateDebugResources
+> Task :capacitor-push-notifications:packageDebugResources
+> Task :capacitor-share:generateDebugResValues
+> Task :capacitor-share:generateDebugResources
+> Task :capacitor-share:packageDebugResources
+> Task :capacitor-splash-screen:generateDebugResValues
+> Task :capacitor-splash-screen:generateDebugResources
+> Task :capacitor-splash-screen:packageDebugResources
+> Task :capacitor-status-bar:generateDebugResValues
+> Task :capacitor-status-bar:generateDebugResources
+> Task :capacitor-status-bar:packageDebugResources
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :capacitor-android:extractDeepLinksDebug
+> Task :capacitor-app:extractDeepLinksDebug
+> Task :capacitor-android:processDebugManifest
+> Task :capacitor-app:processDebugManifest
+> Task :capacitor-browser:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :capacitor-camera:extractDeepLinksDebug
+> Task :capacitor-browser:processDebugManifest
+> Task :capacitor-clipboard:extractDeepLinksDebug
+> Task :capacitor-camera:processDebugManifest
+> Task :capacitor-clipboard:processDebugManifest
+> Task :capacitor-community-text-to-speech:extractDeepLinksDebug
+> Task :capacitor-community-text-to-speech:processDebugManifest
+> Task :capacitor-cordova-android-plugins:extractDeepLinksDebug
+> Task :capacitor-device:extractDeepLinksDebug
+> Task :capacitor-cordova-android-plugins:processDebugManifest
+> Task :capacitor-device:processDebugManifest
+> Task :capacitor-filesystem:extractDeepLinksDebug
+> Task :capacitor-haptics:extractDeepLinksDebug
+> Task :capacitor-filesystem:processDebugManifest
+> Task :capacitor-keyboard:extractDeepLinksDebug
+> Task :capacitor-haptics:processDebugManifest
+> Task :capacitor-keyboard:processDebugManifest
+> Task :capacitor-local-notifications:extractDeepLinksDebug
+> Task :capacitor-network:extractDeepLinksDebug
+> Task :capacitor-local-notifications:processDebugManifest
+> Task :capacitor-preferences:extractDeepLinksDebug
+> Task :capacitor-network:processDebugManifest
+> Task :app:mergeDebugResources
+> Task :capacitor-preferences:processDebugManifest
+> Task :capacitor-push-notifications:extractDeepLinksDebug
+> Task :capacitor-share:extractDeepLinksDebug
+> Task :capacitor-push-notifications:processDebugManifest
+> Task :capacitor-splash-screen:extractDeepLinksDebug
+> Task :capacitor-share:processDebugManifest
+> Task :capacitor-splash-screen:processDebugManifest
+> Task :capacitor-status-bar:extractDeepLinksDebug
+> Task :capacitor-status-bar:processDebugManifest
+> Task :capacitor-android:compileDebugLibraryResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :capacitor-app:compileDebugLibraryResources
+> Task :app:processDebugManifestForPackage
+> Task :capacitor-android:parseDebugLocalResources
+> Task :capacitor-browser:compileDebugLibraryResources
+> Task :capacitor-app:parseDebugLocalResources
+> Task :capacitor-camera:compileDebugLibraryResources
+> Task :capacitor-browser:parseDebugLocalResources
+> Task :capacitor-app:generateDebugRFile
+> Task :capacitor-android:generateDebugRFile
+> Task :capacitor-browser:generateDebugRFile
+> Task :capacitor-clipboard:compileDebugLibraryResources
+> Task :capacitor-camera:parseDebugLocalResources
+> Task :capacitor-clipboard:parseDebugLocalResources
+> Task :capacitor-community-text-to-speech:compileDebugLibraryResources
+> Task :capacitor-camera:generateDebugRFile
+> Task :capacitor-clipboard:generateDebugRFile
+> Task :capacitor-cordova-android-plugins:compileDebugLibraryResources
+> Task :capacitor-community-text-to-speech:parseDebugLocalResources
+> Task :capacitor-community-text-to-speech:generateDebugRFile
+> Task :capacitor-device:compileDebugLibraryResources
+> Task :capacitor-cordova-android-plugins:parseDebugLocalResources
+> Task :capacitor-device:parseDebugLocalResources
+> Task :capacitor-cordova-android-plugins:generateDebugRFile
+> Task :capacitor-filesystem:compileDebugLibraryResources
+> Task :capacitor-haptics:compileDebugLibraryResources
+> Task :capacitor-device:generateDebugRFile
+> Task :capacitor-filesystem:parseDebugLocalResources
+> Task :capacitor-keyboard:compileDebugLibraryResources
+> Task :capacitor-haptics:parseDebugLocalResources
+> Task :capacitor-filesystem:generateDebugRFile
+> Task :capacitor-keyboard:parseDebugLocalResources
+> Task :capacitor-haptics:generateDebugRFile
+> Task :capacitor-local-notifications:compileDebugLibraryResources
+> Task :capacitor-network:compileDebugLibraryResources
+> Task :capacitor-keyboard:generateDebugRFile
+> Task :capacitor-local-notifications:parseDebugLocalResources
+> Task :capacitor-preferences:compileDebugLibraryResources
+> Task :capacitor-network:parseDebugLocalResources
+> Task :capacitor-local-notifications:generateDebugRFile
+> Task :capacitor-preferences:parseDebugLocalResources
+> Task :capacitor-network:generateDebugRFile
+> Task :capacitor-preferences:generateDebugRFile
+> Task :capacitor-push-notifications:compileDebugLibraryResources
+> Task :capacitor-push-notifications:parseDebugLocalResources
+> Task :capacitor-share:compileDebugLibraryResources
+> Task :capacitor-share:parseDebugLocalResources
+> Task :capacitor-push-notifications:generateDebugRFile
+> Task :capacitor-share:generateDebugRFile
+> Task :capacitor-splash-screen:compileDebugLibraryResources
+> Task :capacitor-status-bar:compileDebugLibraryResources
+> Task :capacitor-splash-screen:parseDebugLocalResources
+> Task :capacitor-status-bar:parseDebugLocalResources
+> Task :capacitor-splash-screen:generateDebugRFile
+> Task :capacitor-status-bar:generateDebugRFile
+> Task :capacitor-android:javaPreCompileDebug
+> Task :app:processDebugResources
+> Task :capacitor-android:compileDebugJavaWithJavac FAILED
+
+[Incubating] Problems report is available at: file:///home/runner/work/clinic-medical-emr/clinic-medical-emr/my-app/android/build/reports/problems/problems-report.html
+198 actionable tasks: 198 executed
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':capacitor-android:compileDebugJavaWithJavac'.
+> Java compilation initialization error
+    error: invalid source release: 21
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 11s
+Error: Process completed with exit code 1.
