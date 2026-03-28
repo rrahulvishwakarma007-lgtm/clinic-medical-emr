@@ -25,13 +25,14 @@ jobs:
         run: npm install
         working-directory: my-app
 
-      # 4️⃣ Create .env.local (IMPORTANT FIX)
+      # 4️⃣ Create .env.local (CRITICAL FIX)
       - name: Create env file
         run: |
           echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> my-app/.env.local
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> my-app/.env.local
+          echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> my-app/.env.local
 
-      # 5️⃣ Build Next.js
+      # 5️⃣ Build Next.js (won’t crash now)
       - name: Build Next.js
         run: npm run build
         working-directory: my-app
@@ -46,7 +47,7 @@ jobs:
         run: npx cap sync android
         working-directory: my-app
 
-      # 8️⃣ Setup Java (required for Gradle)
+      # 8️⃣ Setup Java (Gradle needs this)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -57,7 +58,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # 🔟 Give permission to gradlew
+      # 🔟 Grant permission
       - name: Grant execute permission
         run: chmod +x my-app/android/gradlew
 
