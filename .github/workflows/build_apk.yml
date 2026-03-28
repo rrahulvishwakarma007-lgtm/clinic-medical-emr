@@ -9,52 +9,65 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-
     steps:
+      # 1️⃣ Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2️⃣ Setup Node
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
+      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: npm install
         working-directory: my-app
 
+      # 4️⃣ Create .env.local (IMPORTANT FIX)
+      - name: Create env file
+        run: |
+          echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> my-app/.env.local
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> my-app/.env.local
+
+      # 5️⃣ Build Next.js
       - name: Build Next.js
         run: npm run build
         working-directory: my-app
 
-      - name: Ensure Capacitor Android
+      # 6️⃣ Ensure Capacitor Android exists
+      - name: Install Capacitor Android
         run: npm install @capacitor/android
         working-directory: my-app
 
+      # 7️⃣ Sync Capacitor
       - name: Sync Capacitor
         run: npx cap sync android
         working-directory: my-app
 
+      # 8️⃣ Setup Java (required for Gradle)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
+      # 9️⃣ Setup Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      # 🔟 Give permission to gradlew
       - name: Grant execute permission
         run: chmod +x my-app/android/gradlew
 
+      # 1️⃣1️⃣ Build APK
       - name: Build APK
         run: |
           cd my-app/android
           ./gradlew assembleDebug --stacktrace
 
+      # 1️⃣2️⃣ Upload APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
