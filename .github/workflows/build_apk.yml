@@ -41,6 +41,10 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
+      - name: Create Android assets directory
+        working-directory: my-app
+        run: mkdir -p android/app/src/main/assets
+
       - name: Capacitor sync
         working-directory: my-app
         run: npx cap sync android
