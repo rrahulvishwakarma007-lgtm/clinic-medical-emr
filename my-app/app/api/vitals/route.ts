@@ -1,10 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const dynamic = "force-dynamic";
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 // GET /api/vitals?patient_id=xxx
 export async function GET(req: NextRequest) {
@@ -12,7 +16,7 @@ export async function GET(req: NextRequest) {
   const patient_id = searchParams.get("patient_id");
   if (!patient_id) return NextResponse.json({ error: "patient_id required" }, { status: 400 });
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("patient_vitals")
     .select("*")
     .eq("patient_id", patient_id)
@@ -25,7 +29,7 @@ export async function GET(req: NextRequest) {
 // POST /api/vitals
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("patient_vitals")
     .insert([body])
     .select()
@@ -38,7 +42,7 @@ export async function POST(req: NextRequest) {
 // DELETE /api/vitals
 export async function DELETE(req: NextRequest) {
   const { id } = await req.json();
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from("patient_vitals")
     .delete()
     .eq("id", id);
